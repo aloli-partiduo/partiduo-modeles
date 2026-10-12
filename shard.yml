@@ -1,5 +1,5 @@
 name: partiduo-modeles
-version: 0.1.1
+version: 0.1.2
 
 description: |
   Extension MODELES de Partiduo (ADR-010) : modèles de factures, devis et
@@ -29,9 +29,11 @@ targets:
 dependencies:
   # Le cœur : registre, pièces jointes et contrat Partiduo::Api (Facturation).
   partiduo:
-    path: ../partiduo-app
+    github: aloli-partiduo/partiduo-app
+    branch: development
   marten:
-    path: ../../prod-crystal/marten
+    github: aloli-crystal/marten
+    branch: production
   # Markdown -> AsciiDoc -> PDF, pour l'exécutable partiduo-modeles-pdf
   # seulement (ADR-010 D5, D-MOD-017) : le serveur ne les requiert pas.
   # asciicrystal 2.0.26.23 et suivantes compilent avec une sous-classe de
@@ -51,7 +53,8 @@ development_dependencies:
   # L'interface qui monte ui/bulma/ : nécessaire aux specs, à manage.cr et à
   # l'instance de démonstration ; la distribution l'apporte elle-même.
   partiduo-ui-bulma:
-    path: ../partiduo-ui-bulma
+    github: aloli-partiduo/partiduo-ui-bulma
+    branch: development
   ameba:
     github: crystal-ameba/ameba
     version: "~> 1.6"
