@@ -1,5 +1,5 @@
 name: partiduo-modeles
-version: 0.1.0
+version: 0.1.1
 
 description: |
   Extension MODELES de Partiduo (ADR-010) : modèles de factures, devis et
@@ -31,7 +31,7 @@ dependencies:
   partiduo:
     path: ../partiduo-app
   marten:
-    path: ../../marten
+    path: ../../prod-crystal/marten
   # Markdown -> AsciiDoc -> PDF, pour l'exécutable partiduo-modeles-pdf
   # seulement (ADR-010 D5, D-MOD-017) : le serveur ne les requiert pas.
   # asciicrystal 2.0.26.23 et suivantes compilent avec une sous-classe de
