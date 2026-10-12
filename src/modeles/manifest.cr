@@ -15,7 +15,7 @@
 Partiduo::Modules.register do
   code "MODELES"
   name "modeles.module.name"
-  version "0.1.0"
+  version Modeles::VERSION
   requires_core "~> 0.1"
   depends_on "INVOICING"
 

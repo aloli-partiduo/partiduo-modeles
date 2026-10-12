@@ -46,7 +46,10 @@ describe "Dépôt, contrôle et versions des modèles (ADR-010 D3)" do
     missing.should contain("lines")
     result.errors.all?(&.field.==("content")).should be_true
     Api.templates(S.actor).should be_empty
-    Api.message(Api::IssueView.new(result.errors.first.key, result.errors.first.params)).should start_with("Mention obligatoire absente")
+    # Langue fixée : une requête d'écran jouée avant peut laisser une autre langue active.
+    I18n.with_locale("fr") do
+      Api.message(Api::IssueView.new(result.errors.first.key, result.errors.first.params)).should start_with("Mention obligatoire absente")
+    end
   end
 
   it "refuse un champ inconnu, une balise interdite, un format inconnu, un fichier vide" do
