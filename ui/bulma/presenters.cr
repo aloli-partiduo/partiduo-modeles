@@ -41,8 +41,12 @@ module Modeles
     module Present
       alias Api = Modeles::Api
 
+      # Libellé d'une sorte de modèle : type de document de la Facturation
+      # ou sorte déclarée par une extension (son code si elle est inconnue
+      # de ce serveur).
       def self.kind(kind : String) : String
-        I18n.t("modeles.kinds.#{kind}")
+        key = Api.kind_label_key(kind)
+        key == kind ? kind : I18n.t(key)
       end
 
       def self.locale(locale : String) : String

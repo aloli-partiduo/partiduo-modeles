@@ -15,11 +15,19 @@ résultat dans le même format et, quand le serveur a le convertisseur voulu,
 en PDF. Chaque rendu d'un document émis est conservé avec son empreinte
 SHA-256 et la version du modèle.
 
+Depuis le 20 octobre 2026 (amendement A-REP-1), une autre extension peut
+aussi *déclarer ses sortes de modèles* (déclaration calculée d'un rapport,
+fiche d'un listing…) avec leur vocabulaire, et faire rendre un modèle de ces
+sortes avec ses propres données : `partiduo-reports` s'en sert pour la
+déclaration générée et le publipostage par fiche.
+
 La spécification est dans `../partiduo-docs/adr/ADR-010-modeles-de-factures.adoc`
 (D1 à D7), avec ADR-003 (contrat d'extension), ADR-004 D9 (factures non
 électroniques, copie PDF), ADR-005 (interface) et ADR-006 (Facturation). Les
-décisions et blocages propres à ce dépôt sont dans link:doc/ETAT.adoc[]
-(`D-MOD-…`, `B-MOD-…`).
+décisions propres à ce dépôt sont dans link:DECISIONS.adoc[] (à partir de
+D-MOD-018) et, pour la réalisation, dans link:doc/ETAT.adoc[] (`D-MOD-001` à
+`D-MOD-017`, blocages `B-MOD-…`). Le contrat public est décrit dans
+link:doc/api/modeles.adoc[].
 
 IMPORTANT: Le PDF légal Factur-X de la Facturation reste la référence (plateforme
 agréée, copie PDF). Un rendu de modèle est une _présentation_ de la facture,
@@ -67,16 +75,28 @@ facultatifs, déclarés par l'instance, lancés sans shell avec un délai.
 néerlandais, complets et conformes, téléchargeables depuis l'écran (et lisibles
 dans `starters/`).
 
+|Données libres (A-REP-1)
+|Sortes de modèles déclarées par une extension
+(`Modeles::Api.register_vocabulary`) : objets, lignes répétées, groupes aux
+champs libres (codes d'un rapport). Dépôt contrôlé avec leur vocabulaire,
+aperçu avec leurs données d'exemple, rendu par
+`Modeles::Api.render_data` (au format du modèle et en PDF), non conservé :
+l'extension appelante garde ce qu'elle veut garder.
+
 |Droits (D7)
 |`modeles.read` : rendre, télécharger ; `modeles.admin` : déposer, activer,
 désigner par défaut, retirer. Rendre un document exige aussi la lecture des
-factures (`invoicing.invoice.read`).
+factures (`invoicing.invoice.read`) ; rendre des données libres, le droit
+propre de l'extension appelante, qu'elle contrôle elle-même.
 |===
 
 == Installation
 
-L'extension est un shard ; elle dépend du cœur (`partiduo-app`) et de la
-Facturation (`depends_on "INVOICING"`). Une distribution la compose ainsi :
+L'extension est un shard ; elle dépend du cœur (`partiduo-app`). Elle ne
+déclare plus de dépendance à la Facturation (D-MOD-018) : sans elle, les
+modèles de factures, devis et avoirs restent en base mais ne se déposent ni
+ne se rendent, et seules les sortes déclarées par d'autres extensions
+actives servent. Une distribution la compose ainsi :
 
 [source,crystal]
 ----
@@ -92,7 +112,9 @@ end
 et ajoute `require "partiduo-modeles/cli"` à sa ligne de commande pour les
 migrations (tables `modeles_template`, `modeles_template_version`,
 `modeles_stored_file`, `modeles_rendition`). L'extension s'active par
-dossier : `PARTIDUO_MODULES=invoicing,modeles` ou l'écran des modules.
+dossier : `PARTIDUO_MODULES=invoicing,modeles` ou l'écran des modules
+(migrations 0001 et 0002 : la seconde ouvre la colonne `kind` aux sortes
+déclarées).
 L'interface est montée sous `/ext/MODELES/` ; le menu « Modèles de
 documents » est sous « Facturation ».
 
@@ -357,6 +379,32 @@ Liste : `{% for mention in mentions %}…{% endfor %}`.
 |===
 
 
+=== Sortes déclarées par une extension
+
+Le même langage sert aux modèles des sortes déclarées par une autre extension
+(A-REP-1), avec *leur* vocabulaire, affiché à l'écran sous celui des
+factures. Exemple d'un modèle Markdown de la sorte `report` de
+`partiduo-reports` :
+
+[source,markdown]
+----
+# {{ declaration.titre }}
+
+Période : {{ declaration.periode }}
+
+Chiffre d'affaires : {{ montants.CA }} (exercice précédent : {{ montants.CA_N1 }})
+
+| Libellé | Montant |
+|---|---|
+{% for ligne in lignes %}| {{ ligne.libelle }} | {{ ligne.N }} |
+{% endfor %}
+----
+
+Un groupe *ouvert* (`montants` ci-dessus) admet tout champ formé de lettres,
+de chiffres et de `_` : ce sont les codes définis par l'utilisateur dans
+l'extension appelante. Les mentions obligatoires ne valent que pour les
+documents de la Facturation.
+
 == Développement local
 
 `shard.yml` et `shard.lock` référencent les shards maison sur GitHub
@@ -431,10 +479,10 @@ src/
 └── modeles/                    # métier (application Marten « modeles »)
     ├── app.cr, manifest.cr     # code MODELES, permissions, menu
     ├── config.cr               # types, langues, formats
-    ├── fusion/                 # moteur : vocabulaire, contexte, analyse, échappement, rendu
+    ├── fusion/                 # moteur : vocabulaires, contextes (facture, données libres), analyse, échappement, rendu
     ├── office/                 # archives ODT et DOCX : ZIP, normalisation, fusion
     ├── starters/               # modèles de départ (4 formats)
-    ├── services/               # fichiers, convertisseurs, document fictif, règles (interne)
+    ├── services/               # fichiers, convertisseurs, document fictif, sortes déclarées, règles (interne)
     ├── models/, migrations/    # tables modeles_*
     ├── api/                    # contrat public Modeles::Api
     └── locales/                # fr, en, nl
@@ -442,7 +490,9 @@ ui/bulma/                       # écrans sous /ext/MODELES/ (Modeles::Api et Pa
 ui/bulma/document_links.cr      # panneau sur la fiche d'un document (PartiduoUi::Extensions.document_links)
 starters/                       # modèles de départ générés (scripts/starters.cr)
 scripts/demo.cr                 # instance de démonstration
-doc/ETAT.adoc                   # décisions D-MOD-…, blocages B-MOD-…
+DECISIONS.adoc                  # décisions à partir de D-MOD-018, amendements réalisés
+doc/ETAT.adoc                   # décisions D-MOD-001 à 017, blocages B-MOD-…
+doc/api/modeles.adoc            # contrat public Modeles::Api
 ----
 
 == Licence

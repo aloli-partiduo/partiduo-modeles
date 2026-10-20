@@ -6,8 +6,10 @@ module Modeles
   # formats. Point d'entrée du contrôle (`analyze`) et du rendu (`render`).
   module Fusion
     # Contrôle d'un modèle de `format` pour le type de document `kind`
-    # (`nil` : sans les mentions obligatoires).
-    def self.analyze(format : String, bytes : Bytes, kind : String? = nil) : Report
+    # (`nil` : sans les mentions obligatoires, qui ne valent que pour les
+    # documents de la Facturation) avec le vocabulaire `lexicon`.
+    def self.analyze(format : String, bytes : Bytes, kind : String? = nil,
+                     lexicon : Lexicon = Vocabulary::INVOICE) : Report
       if Config.office?(format)
         document = begin
           Office::Document.new(bytes, format)
@@ -16,7 +18,7 @@ module Modeles
           report.error("invalid_package", {"format" => format.upcase, "message" => error.message.to_s})
           return report
         end
-        report = Analyzer.analyze(document.source, kind)
+        report = Analyzer.analyze(document.source, kind, lexicon)
         document.problems.each { |issue| report.error(issue.code, issue.params) }
         report
       else
@@ -26,7 +28,7 @@ module Modeles
           report.error("not_text")
           return report
         end
-        Analyzer.analyze(text.lchop('\u{FEFF}'), kind)
+        Analyzer.analyze(text.lchop('\u{FEFF}'), kind, lexicon)
       end
     end
 
@@ -35,12 +37,25 @@ module Modeles
     # fictif), imprimée en tête du document.
     def self.render(format : String, bytes : Bytes, view : Partiduo::Api::Invoicing::DocumentView,
                     marker : String? = nil) : Bytes
-      values = ContextBuilder.new(view, format, marker).build
+      render_values(format, bytes, ContextBuilder.new(view, format, marker).build, marker)
+    end
+
+    # Rendu d'un modèle d'une sorte déclarée par une extension avec des
+    # données libres (A-REP-1) : valeurs `groupe.champ` et lignes répétées,
+    # contrôlées au préalable par `DataKinds`.
+    def self.render_data(format : String, bytes : Bytes, definition : DataKinds::Definition,
+                         values : Hash(String, String), rows : Array(Hash(String, String)), marker : String? = nil) : Bytes
+      render_values(format, bytes, DataContext.build(definition, format, values, rows), marker, definition.lexicon)
+    end
+
+    # Fusion d'un contexte déjà bâti, au format du modèle.
+    def self.render_values(format : String, bytes : Bytes, values : Hash(String, Marten::Template::Value),
+                           marker : String? = nil, lexicon : Lexicon = Vocabulary::INVOICE) : Bytes
       if Config.office?(format)
-        Office::Document.new(bytes, format).render(values, marker)
+        Office::Document.new(bytes, format).render(values, marker, lexicon)
       else
         text = String.new(bytes).lchop('\u{FEFF}')
-        rendered = Engine.render(text, values, escape: false)
+        rendered = Engine.render(text, values, escape: false, lexicon: lexicon)
         (marker ? mark_text(format, rendered, Escaper.escape(format, marker)) : rendered).to_slice
       end
     end

@@ -25,6 +25,10 @@ partiduo-app) et l'extension les utilise.
   la conversion réelle par LibreOffice (B-MOD-005) ; celles d'AsciiDoc et de
   Markdown par `partiduo-modeles-pdf` passent.
 * Instance de démonstration : `scripts/demo.cr` (README).
+* 20 octobre 2026 : amendement A-REP-1 réalisé (rendu de données libres,
+  sortes déclarées par une extension, dépendance à la Facturation retirée) ;
+  les décisions suivantes sont dans link:../DECISIONS.adoc[] (D-MOD-018 et
+  au-delà).
 
 == Décisions
 

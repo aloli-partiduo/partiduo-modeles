@@ -9,10 +9,16 @@ module Modeles
   # Permissions (ADR-010 D7) : `modeles.read` (rendre, télécharger),
   # `modeles.admin` (déposer, activer, désigner par défaut, retirer). Les
   # documents sont lus par `Partiduo::Api::Invoicing` avec l'acteur : il
-  # faut aussi `invoicing.invoice.read` pour rendre un document.
+  # faut aussi `invoicing.invoice.read` pour rendre un document, et la
+  # Facturation active.
   #
   # Le rendu ne modifie jamais la facture (ni numéro, ni montants, ni
   # empreinte) : l'extension ne fait que la lire.
+  #
+  # Données libres (A-REP-1) : une extension déclare ses sortes de modèles
+  # (`register_vocabulary`) et fait rendre un modèle de ces sortes avec ses
+  # propres données (`render_data`), après avoir contrôlé son propre droit ;
+  # MODELES contrôle celui de lire le modèle (`modeles.read`).
   module Api
     alias Actor = Partiduo::Api::Actor
     alias Guard = Partiduo::Api::Guard
@@ -27,6 +33,52 @@ module Modeles
 
     # Nombre maximal de rendus rendus par `renditions`.
     MAX_LIMIT = 500
+
+    # Code de la Facturation, dont les documents se rendent avec les types
+    # `KINDS`.
+    INVOICING = "INVOICING"
+
+    # --- Sortes de modèles (A-REP-1) ---------------------------------------------
+
+    # Déclare une sorte de modèle remplie par des données libres (`report`,
+    # `listing`…), avec son vocabulaire. Appelé au chargement de
+    # l'extension déclarante, une fois ; une déclaration incohérente lève
+    # `ArgumentError` au démarrage. Les types de document de la Facturation
+    # (`KINDS`) sont réservés.
+    #
+    # ```
+    # Modeles::Api.register_vocabulary("report", Modeles::Api::VocabularyInput.new(
+    #   module_code: "REPORTS", label_key: "reports.modeles.kinds.report",
+    #   objects: {"declaration" => %w[titre periode], "montants" => [] of String},
+    #   open: ["montants"], list: "lignes", item: "ligne", list_fields: %w[code libelle]))
+    # ```
+    def self.register_vocabulary(kind : String, input : VocabularyInput) : Nil
+      DataKinds.register(kind, input)
+      nil
+    end
+
+    # Sortes de modèles utilisables dans ce dossier : les types de document
+    # de la Facturation si elle est active, puis les sortes déclarées par
+    # une extension active.
+    def self.kinds(actor : Actor) : Array(KindView)
+      authorize!(actor, READ)
+      list = [] of KindView
+      if Partiduo::Modules.active?(INVOICING)
+        KINDS.each { |kind| list << KindView.new(kind, "modeles.kinds.#{kind}", INVOICING, true) }
+      end
+      DataKinds.all.each do |definition|
+        next unless Partiduo::Modules.active?(definition.module_code)
+        list << KindView.new(definition.kind, definition.label_key, definition.module_code, false)
+      end
+      list
+    end
+
+    # Libellé (clé) d'une sorte de modèle, même inactive ou inconnue de
+    # cette instance (le code est alors rendu tel quel).
+    def self.kind_label_key(kind : String) : String
+      return "modeles.kinds.#{kind}" if KINDS.includes?(kind)
+      DataKinds.find(kind).try(&.label_key) || kind
+    end
 
     # --- Modèles -----------------------------------------------------------------
 
@@ -77,7 +129,7 @@ module Modeles
         errors << FieldError.base("modeles.errors.template.retired")
       end
       kind = existing.try(&.kind) || input.kind
-      report = Templates.check(input.filename, input.content, Config::KINDS.includes?(kind) ? kind : nil, existing.try(&.format))
+      report = Templates.check(input.filename, input.content, Templates.known_kind?(kind) ? kind : nil, existing.try(&.format))
       report.errors.each { |issue| errors << FieldError.new("content", issue.key, issue.params) }
       format = report.format
       return Result(TemplateView).failure(errors) unless errors.empty? && format
@@ -179,10 +231,17 @@ module Modeles
       template = Templates.find!(id)
       number = version || Templates.latest_number(id)
       record = Templates.version!(id, number)
-      view = Sample.document(template.kind!, template.locale!)
       marker = I18n.with_locale(template.locale!) { I18n.t("modeles.fusion.sample") }
       source = Files.read(Files.find!(record.file_id!.to_i64))
       base = "apercu-#{Templates.slug(template.name!)}-v#{number}"
+      if definition = DataKinds.find(template.kind!)
+        return produce_data(template.format!, source, definition, definition.sample_values, definition.sample_rows,
+          marker, base, pdf)
+      end
+      unless KINDS.includes?(template.kind!)
+        return Result(RenderView).failure(FieldError.new("kind", "modeles.errors.kind.unregistered", {"kind" => template.kind!}))
+      end
+      view = Sample.document(template.kind!, template.locale!)
       produce(template.format!, source, view, marker, base, pdf, nil)
     end
 
@@ -240,6 +299,58 @@ module Modeles
       produce(template.format!, source, document, nil, base, pdf, {template, version, actor})
     end
 
+    # Rendu d'un modèle d'une sorte déclarée par une extension avec des
+    # données libres (A-REP-1) : `values` (`groupe.champ` → texte déjà
+    # présenté) et `rows` (lignes répétées, champ → texte), fusionnées avec
+    # la version active du modèle `template_id` (`nil` : le modèle par
+    # défaut de la sorte dans la langue `locale`, la langue courante par
+    # défaut), au format du modèle et, si `pdf`, en PDF.
+    #
+    # Droits : `modeles.read` (lire le modèle) ; l'extension appelante a
+    # contrôlé le sien avant l'appel. La pièce qui a déclaré la sorte doit
+    # être active (`ModuleDisabled` sinon).
+    #
+    # Rien n'est conservé ici (l'appelante garde ce qu'elle veut garder) :
+    # `rendition` est `nil`. Sans convertisseur pour le format du modèle, le
+    # fichier est rendu et `pdf_error` vaut `modeles.errors.pdf.unavailable`
+    # (de même pour un délai dépassé ou un échec, avec `pdf_detail`).
+    #
+    # Refus : `kind` (`modeles.errors.kind.unregistered`), `template_id`
+    # (`modeles.errors.template.none`, `.not_active`, `.kind_mismatch`),
+    # `values` et `rows` (`modeles.errors.data.unknown_field`, `.too_many`,
+    # `.too_long`, `.no_list`), `base` (`modeles.errors.render.failed`).
+    def self.render_data(actor : Actor, template_id : Int64?, kind : String, values : Hash(String, String),
+                         rows : Array(Hash(String, String)) = [] of Hash(String, String), pdf : Bool = false,
+                         locale : String? = nil, name : String = "") : Result(RenderView)
+      authorize!(actor, READ)
+      definition = DataKinds.find(kind)
+      unless definition
+        return Result(RenderView).failure(FieldError.new("kind", "modeles.errors.kind.unregistered", {"kind" => kind}))
+      end
+      Guard.require_module!(definition.module_code)
+      errors = DataKinds.errors(definition, values, rows)
+      return Result(RenderView).failure(errors) unless errors.empty?
+      language = locale || I18n.locale.to_s
+      language = "fr" unless LOCALES.includes?(language)
+      template = if id = template_id
+                   Templates.find!(id)
+                 else
+                   Template.filter(kind: kind, locale: language, is_default: true).first
+                 end
+      return Result(RenderView).failure(FieldError.new("template_id", "modeles.errors.template.none")) unless template
+      number = template.active_version.try(&.to_i)
+      if number.nil? || template.retired_at
+        return Result(RenderView).failure(FieldError.new("template_id", "modeles.errors.template.not_active"))
+      end
+      if template.kind != kind
+        return Result(RenderView).failure(FieldError.new("template_id", "modeles.errors.template.kind_mismatch"))
+      end
+      version = Templates.version!(template.id!.to_i64, number)
+      source = Files.read(Files.find!(version.file_id!.to_i64))
+      base = "#{Templates.slug(name.presence || kind)}-#{Templates.slug(template.name!)}-v#{number}"
+      produce_data(template.format!, source, definition, values, rows, nil, base, pdf)
+    end
+
     # Rendus conservés, du plus récent au plus ancien ; `document_id` : ceux
     # d'un document.
     def self.renditions(actor : Actor, document_id : Int64? = nil, limit : Int32 = 100) : Array(RenditionView)
@@ -282,9 +393,17 @@ module Modeles
       Converters.available?(format)
     end
 
-    # Vocabulaire du contexte de fusion, dans l'ordre de la documentation.
-    def self.vocabulary(actor : Actor) : Array(VocabularyGroupView)
+    # Vocabulaire du contexte de fusion, dans l'ordre de la documentation :
+    # celui des documents de la Facturation (`kind` nul ou type de
+    # document), ou celui d'une sorte déclarée (vide si elle est inconnue).
+    def self.vocabulary(actor : Actor, kind : String? = nil) : Array(VocabularyGroupView)
       authorize!(actor, READ)
+      if kind && !KINDS.includes?(kind)
+        definition = DataKinds.find(kind) || return [] of VocabularyGroupView
+        lexicon = definition.lexicon
+        return lexicon.objects.map { |name, fields| VocabularyGroupView.new(name, false, nil, fields, lexicon.open?(name), definition.labels) } +
+          lexicon.lists.map { |name, fields| VocabularyGroupView.new(name, true, definition.item, fields, lexicon.open?(name), definition.labels) }
+      end
       items = {"lignes" => "ligne", "tva" => "groupe", "mentions" => "mention"}
       Fusion::Vocabulary::OBJECTS.map { |name, fields| VocabularyGroupView.new(name, false, nil, fields) } +
         Fusion::Vocabulary::LISTS.map { |name, fields| VocabularyGroupView.new(name, true, items[name], fields) }
@@ -321,6 +440,32 @@ module Modeles
       Rendition.filter(id: id).first || raise Partiduo::Api::NotFound.new("modeles_rendition", id)
     end
 
+    # Fusion de données libres et conversion ; rien n'est conservé.
+    private def self.produce_data(format : String, source : Bytes, definition : DataKinds::Definition,
+                                  values : Hash(String, String), rows : Array(Hash(String, String)), marker : String?,
+                                  base : String, pdf : Bool) : Result(RenderView)
+      bytes = begin
+        Fusion.render_data(format, source, definition, values, rows, marker)
+      rescue error : Fusion::TemplateRejected | Fusion::RenderError | Office::InvalidPackage
+        return Result(RenderView).failure(FieldError.base("modeles.errors.render.failed", {"detail" => error.message.to_s}))
+      end
+      file, pdf_file, pdf_error, pdf_detail = files(format, bytes, base, pdf)
+      Result(RenderView).success(RenderView.new(file, pdf_file, pdf_error, pdf_detail, nil, !marker.nil?))
+    end
+
+    # Fichier au format du modèle et, si `pdf`, sa conversion (ou la clé de
+    # l'échec et le message de l'outil).
+    private def self.files(format : String, bytes : Bytes, base : String,
+                           pdf : Bool) : {FileView, FileView?, String?, String}
+      file = FileView.new("#{base}.#{Config::EXTENSIONS[format]}", Config::CONTENT_TYPES[format], bytes)
+      return {file, nil, nil, ""} unless pdf
+      begin
+        {file, FileView.new("#{base}.pdf", "application/pdf", Converters.convert(format, bytes)), nil, ""}
+      rescue error : ConversionError
+        {file, nil, error.key, error.detail}
+      end
+    end
+
     # Fusion, conversion et, pour un document émis (`keep`), conservation.
     private def self.produce(format : String, source : Bytes, view : Inv::DocumentView, marker : String?, base : String,
                              pdf : Bool, keep : {Template, TemplateVersion, Actor}?) : Result(RenderView)
@@ -329,18 +474,7 @@ module Modeles
       rescue error : Fusion::TemplateRejected | Fusion::RenderError | Office::InvalidPackage
         return Result(RenderView).failure(FieldError.base("modeles.errors.render.failed", {"detail" => error.message.to_s}))
       end
-      file = FileView.new("#{base}.#{Config::EXTENSIONS[format]}", Config::CONTENT_TYPES[format], bytes)
-      pdf_file = nil
-      pdf_error = nil
-      pdf_detail = ""
-      if pdf
-        begin
-          pdf_file = FileView.new("#{base}.pdf", "application/pdf", Converters.convert(format, bytes))
-        rescue error : ConversionError
-          pdf_error = error.key
-          pdf_detail = error.detail
-        end
-      end
+      file, pdf_file, pdf_error, pdf_detail = files(format, bytes, base, pdf)
       rendition = keep.try do |(template, version, actor)|
         Transaction.run do
           Result(RenditionView).success(keep!(view, template, version, actor, file, pdf_file, pdf ? pdf_error : nil))

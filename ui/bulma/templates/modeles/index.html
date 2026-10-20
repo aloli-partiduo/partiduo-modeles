@@ -48,7 +48,7 @@
   </form>
 </section>{% endif %}
 
-<section class="pd-panel" aria-labelledby="pd-mod-starters-title" data-modeles-starters>
+{% if show_starters %}<section class="pd-panel" aria-labelledby="pd-mod-starters-title" data-modeles-starters>
   <header><h2 id="pd-mod-starters-title">{% translate "modeles_ui.starters.title" %}</h2></header>
   <p class="help pd-body pb-0">{% translate "modeles_ui.starters.help" %}</p>
   <div class="pd-scroll"><table class="table is-fullwidth pd-mod-table pd-mod-starters">
@@ -56,7 +56,7 @@
     <thead><tr><th scope="col">{% translate "modeles_ui.fields.kind" %}</th>{% for locale in locale_labels %}<th scope="col">{{ locale }}</th>{% endfor %}</tr></thead>
     <tbody>{% for kind in starters %}<tr><th scope="row">{{ kind.label }}</th>{% for locale in kind.locales %}<td><div class="pd-mod-links">{% for link in locale.links %}<a class="button is-small pd-touch" href="{{ link.url }}" title="{{ link.title }}" aria-label="{{ kind.label }} · {{ locale.label }} · {{ link.title }}">{% include "ui/_icon.html" with name="download" %}<span>{{ link.label }}</span></a>{% endfor %}</div></td>{% endfor %}</tr>{% endfor %}</tbody>
   </table></div>
-</section>
+</section>{% endif %}
 <div class="pd-mod-grid">
 <section class="pd-panel" aria-labelledby="pd-mod-pdf-title" data-modeles-converters>
   <header><h2 id="pd-mod-pdf-title">{% translate "modeles_ui.converters.title" %}</h2></header>
@@ -68,7 +68,7 @@
 <section class="pd-panel" aria-labelledby="pd-mod-vocabulary-title">
   <header><h2 id="pd-mod-vocabulary-title">{% translate "modeles_ui.vocabulary.title" %}</h2></header>
   <div class="pd-body"><p class="help mb-3">{% translate "modeles_ui.vocabulary.help" %}</p>
-    {% for group in vocabulary %}<details class="pd-mod-vocabulary"><summary class="pd-touch"><code>{{ group.group }}</code> — {{ group.label }}</summary>
+    {% for group in vocabulary %}<details class="pd-mod-vocabulary"><summary class="pd-touch">{% if group.kind %}{{ group.kind }} · {% endif %}<code>{{ group.group }}</code> — {{ group.label }}</summary>
       {% if group.loop %}<p class="is-size-7 pd-muted"><code>{{ group.loop }}</code></p>{% endif %}
       <dl class="pd-mod-dl">{% for field in group.fields %}<dt><code>&#123;&#123; {{ field.field }} &#125;&#125;</code></dt><dd>{{ field.description }}</dd>{% endfor %}</dl>
     </details>{% endfor %}

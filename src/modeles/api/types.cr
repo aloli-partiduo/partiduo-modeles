@@ -146,7 +146,45 @@ module Modeles
 
     # Groupe du vocabulaire de fusion (ADR-010 D2) : objet (`facture`) ou
     # liste (`lignes`, parcourue par `item` dans une boucle), et ses champs.
-    record VocabularyGroupView, name : String, list : Bool, item : String?, fields : Array(String)
+    # `open` : groupe aux champs libres (codes d'un rapport) ; `labels` :
+    # préfixe des libellés (`<labels>.groups.<groupe>`,
+    # `<labels>.<groupe>.<champ>`, `<labels>.<groupe>._any` pour un groupe
+    # ouvert).
+    record VocabularyGroupView, name : String, list : Bool, item : String?, fields : Array(String),
+      open : Bool = false, labels : String = "modeles.vocabulary"
+
+    # Sorte de modèle utilisable dans ce dossier (A-REP-1) : un type de
+    # document de la Facturation (`invoicing`, si elle est active) ou une
+    # sorte déclarée par une extension active (`module_code`), remplie par
+    # des données libres. `label_key` : libellé à traduire.
+    record KindView, code : String, label_key : String, module_code : String, invoicing : Bool
+
+    # Déclaration d'une sorte de modèle par une extension (A-REP-1),
+    # `Modeles::Api.register_vocabulary` :
+    #
+    # * `module_code` : la pièce qui déclare (elle doit être active pour
+    #   déposer ou rendre un modèle de cette sorte) ;
+    # * `label_key` : libellé de la sorte ;
+    # * `objects` : objets et leurs champs (`{{ declaration.titre }}`) ;
+    # * `list`, `item`, `list_fields` : lignes répétées
+    #   (`{% for ligne in lignes %}{{ ligne.libelle }}{% endfor %}`) ; `list`
+    #   vide : pas de lignes ;
+    # * `open` : groupes (objets ou la liste) aux champs libres, par exemple
+    #   les codes des lignes d'un rapport ;
+    # * `labels` : préfixe des libellés du vocabulaire, fournis par
+    #   l'extension (voir `VocabularyGroupView`) ;
+    # * `sample_values`, `sample_rows` : données fictives de l'aperçu.
+    record VocabularyInput,
+      module_code : String,
+      label_key : String,
+      objects : Hash(String, Array(String)) = {} of String => Array(String),
+      list : String = "",
+      item : String = "",
+      list_fields : Array(String) = [] of String,
+      open : Array(String) = [] of String,
+      labels : String = "",
+      sample_values : Hash(String, String) = {} of String => String,
+      sample_rows : Array(Hash(String, String)) = [] of Hash(String, String)
 
     # Modèle de départ (ADR-010 D6).
     record StarterView, kind : String, locale : String, format : String, filename : String

@@ -24,9 +24,11 @@ module Modeles
     module Engine
       # Rend `source` ; `escape` : échappement XML par Marten à l'impression
       # (ODT, DOCX) ; sinon les valeurs sont déjà échappées pour AsciiDoc ou
-      # Markdown.
-      def self.render(source : String, values : Hash(String, Marten::Template::Value), escape : Bool) : String
-        report = Analyzer.analyze(source)
+      # Markdown. `lexicon` : vocabulaire de la sorte du modèle (celui des
+      # documents de la Facturation par défaut).
+      def self.render(source : String, values : Hash(String, Marten::Template::Value), escape : Bool,
+                      lexicon : Lexicon = Vocabulary::INVOICE) : String
+        report = Analyzer.analyze(source, lexicon: lexicon)
         raise TemplateRejected.new(report) unless report.ok?
         template = Marten::Template::Template.new(source)
         context = Marten::Template::Context.new(values)

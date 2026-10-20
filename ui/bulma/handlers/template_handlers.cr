@@ -3,15 +3,21 @@
 module Modeles
   module Ui
     # `/ext/MODELES/` : modèles déposés, dépôt d'un modèle (administrateur),
-    # modèles de départ, convertisseurs PDF, vocabulaire de fusion.
+    # modèles de départ, convertisseurs PDF, vocabulaire de fusion. Les
+    # sortes proposées au dépôt sont celles du dossier : types de document
+    # de la Facturation si elle est active, sortes déclarées par les
+    # extensions actives (A-REP-1).
     class IndexHandler < Handler
       def get
-        show({"name" => "", "kind" => "invoice", "locale" => I18n.locale.to_s}, {} of String => Array(String), [] of String)
+        kind = Api.kinds(current.actor).first?.try(&.code) || ""
+        show({"name" => "", "kind" => kind, "locale" => I18n.locale.to_s}, {} of String => Array(String), [] of String)
       end
 
       def show(values : Hash(String, String), errors : Hash(String, Array(String)), report : Array(String),
                status : Int32 = 200) : Marten::HTTP::Response
         actor = current.actor
+        kinds = Api.kinds(actor)
+        invoicing = kinds.any?(&.invoicing)
         templates = Api.templates(actor, Api::TemplateQuery.new(include_retired: query("retired") == "1"))
         page("modeles/index.html", {
           "title"         => I18n.t("modeles_ui.index.title"),
@@ -22,14 +28,16 @@ module Modeles
           "values"        => Ui.row(values),
           "errors"        => errors,
           "report"        => listed(report),
-          "kinds"         => choices(Api::KINDS, values["kind"], "modeles.kinds"),
+          "kinds"         => kinds.map { |kind| Ui.row({"value" => kind.code, "label" => I18n.t(kind.label_key), "selected" => Ui.flag(kind.code == values["kind"])}) },
           "locales"       => choices(Api::LOCALES, values["locale"], "modeles.locales"),
-          "starters"      => starters,
+          "starters"      => invoicing ? starters : [] of Row,
+          "show_starters" => Ui.flag(invoicing),
           "locale_labels" => Api::LOCALES.map { |locale| Present.locale(locale) },
           "converters"    => Api.converters(actor).map { |view| converter(view) },
-          "vocabulary"    => vocabulary,
-          "history_url"   => Ui.url("renditions"),
-          "max_mb"        => (Api::MAX_BYTES // (1024 * 1024)).to_s,
+          "vocabulary"    => vocabulary(invoicing ? [nil.as(String?)] : [] of String?) +
+                          vocabulary(kinds.reject(&.invoicing).map(&.code.as(String?))),
+          "history_url" => Ui.url("renditions"),
+          "max_mb"      => (Api::MAX_BYTES // (1024 * 1024)).to_s,
         }, status: status)
       end
 
@@ -57,14 +65,22 @@ module Modeles
         })
       end
 
-      private def vocabulary : Array(Row)
-        Api.vocabulary(current.actor).map do |group|
-          prefix = group.item || group.name
-          rows = group.fields.map do |field|
-            Ui.row({"field" => "#{prefix}.#{field}", "description" => I18n.t("modeles.vocabulary.#{group.name}.#{field}")})
+      # Groupes du vocabulaire des sortes `kinds` (`nil` : documents de la
+      # Facturation), chacun précédé de sa sorte pour une sorte déclarée.
+      private def vocabulary(kinds : Array(String?)) : Array(Row)
+        kinds.flat_map do |kind|
+          Api.vocabulary(current.actor, kind).map do |group|
+            prefix = group.item || group.name
+            rows = group.fields.map do |field|
+              Ui.row({"field" => "#{prefix}.#{field}", "description" => I18n.t("#{group.labels}.#{group.name}.#{field}")})
+            end
+            if group.open
+              rows << Ui.row({"field" => "#{prefix}.CODE", "description" => I18n.t("#{group.labels}.#{group.name}._any")})
+            end
+            Ui.row({"group" => group.name, "label" => I18n.t("#{group.labels}.groups.#{group.name}"),
+                    "kind" => kind.try { |code| Present.kind(code) },
+                    "loop" => group.item.try { |item| "{% for #{item} in #{group.name} %}…{% endfor %}" }}, {"fields" => rows})
           end
-          Ui.row({"group" => group.name, "label" => I18n.t("modeles.vocabulary.groups.#{group.name}"),
-                  "loop" => group.item.try { |item| "{% for #{item} in #{group.name} %}…{% endfor %}" }}, {"fields" => rows})
         end
       end
     end

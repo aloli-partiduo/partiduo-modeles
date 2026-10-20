@@ -6,10 +6,25 @@ private alias S = Modeles::SpecSupport
 private alias Api = Modeles::Api
 
 describe "Droits (ADR-010 D7)" do
-  it "déclare modeles.read et modeles.admin et dépend de la Facturation" do
+  it "déclare modeles.read et modeles.admin, sans dépendre de la Facturation (D-MOD-018)" do
     manifest = Partiduo::Modules[Modeles::CODE]
     manifest.permissions.should eq(%w[modeles.read modeles.admin])
-    manifest.depends_on.should eq(["INVOICING"])
+    manifest.depends_on.should be_empty
+  end
+
+  it "reste active sans la Facturation, dont les documents sont alors refusés" do
+    S.books
+    S.template
+    invoice = S.issue
+    Partiduo::Api::Modules.deactivate(S::SYSTEM, "INVOICING").value!
+    Api.templates(S.actor).size.should eq(1)
+    Api.kinds(S.actor).map(&.code).should_not contain("invoice")
+    expect_raises(Partiduo::Api::ModuleDisabled) { Api.render(S.reader, invoice.id) }
+    result = Api.upload(S.actor, Api::UploadInput.new("f.md", Modeles::Starters.file("invoice", "fr", "markdown"),
+      name: "x", kind: "invoice", locale: "fr"))
+    result.errors.map(&.key).should contain("modeles.errors.kind.invalid")
+    Partiduo::Api::Modules.activate(S::SYSTEM, "INVOICING").value!
+    Api.render(S.reader, invoice.id).success?.should be_true
   end
 
   it "réserve le dépôt, l'activation, le défaut et le retrait à modeles.admin" do

@@ -94,6 +94,7 @@ nl:
         too_long: "De naam is langer dan %{max} tekens."
       kind:
         invalid: "Onbekend documenttype: %{value}."
+        unregistered: "Sjabloonsoort onbekend op deze server: %{kind}."
       locale:
         invalid: "Onbekende taal: %{value}."
       template:
@@ -103,6 +104,11 @@ nl:
         kind_mismatch: "Dit sjabloon is bedoeld voor een ander documenttype."
       document:
         kind: "Dit document (%{kind}) kan niet met een sjabloon worden opgemaakt: enkel offertes, facturen en creditnota's."
+      data:
+        unknown_field: "Gegeven buiten de woordenschat van deze soort: %{field}."
+        too_many: "Te veel gegevens (hoogstens %{max})."
+        too_long: "Waarde te lang: %{field} (hoogstens %{max} tekens)."
+        no_list: "Soort %{kind} heeft geen herhaalde regels."
       render:
         failed: "Opmaak mislukt: %{detail}"
       pdf:

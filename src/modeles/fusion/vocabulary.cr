@@ -35,10 +35,12 @@ module Modeles
       # Attributs de `loop` dans une boucle (moteur de Marten).
       LOOP = %w[index index0 first? last? length revindex revindex0 odd? even? parent]
 
+      # Vocabulaire des documents de la Facturation, pour l'analyse.
+      INVOICE = Lexicon.new(OBJECTS, LISTS, PRINTABLE_LISTS)
+
       # Tous les champs, sous la forme `groupe.champ` (documentation).
       def self.paths : Array(String)
-        OBJECTS.flat_map { |group, fields| fields.map { |field| "#{group}.#{field}" } } +
-          LISTS.flat_map { |group, fields| fields.map { |field| "#{group}.#{field}" } }
+        INVOICE.paths
       end
 
       def self.group?(name : String) : Bool

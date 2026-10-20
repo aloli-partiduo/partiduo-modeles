@@ -40,6 +40,22 @@ describe "Écrans de l'extension sous /ext/MODELES/ (ADR-010, ADR-005 D4)" do
     html.should contain("modeles/css/modeles.css")
   end
 
+  it "propose au dépôt les sortes déclarées et montre leur vocabulaire ; sans Facturation, ni ses types ni ses modèles de départ" do
+    browser = admin
+    html = browser.get("/ext/MODELES/").html
+    html.should contain(%(<option value="essai">))
+    html.should contain(%(<option value="invoice" selected>))
+    html.should_not contain(%(<option value="compta">))
+    html.should contain("{{ ligne.CODE }}")
+    html.should contain("{{ montants.CODE }}")
+    Partiduo::Api::Modules.deactivate(S::SYSTEM, "INVOICING").value!
+    html = browser.get("/ext/MODELES/").html
+    html.should_not contain(%(<option value="invoice"))
+    html.should contain(%(<option value="essai" selected>))
+    html.should_not contain("data-modeles-starters")
+    html.should_not contain("{{ vendeur.forme_juridique }}")
+  end
+
   it "télécharge un modèle de départ" do
     browser = admin
     response = browser.get("/ext/MODELES/starters/quote/nl/docx")

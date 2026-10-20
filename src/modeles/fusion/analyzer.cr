@@ -45,8 +45,11 @@ module Modeles
     # * filtres admis : `capitalize`, `default`, `downcase`, `upcase`,
     #   `join`, `size`, `truncate` (`safe` et `escape` défont l'échappement
     #   selon le format et sont refusés) ;
-    # * champs : ceux de `Vocabulary`, les variables de boucle et `loop` ;
-    # * mentions obligatoires selon le type de document (`Requirements`).
+    # * champs : ceux du vocabulaire de la sorte de modèle (`Lexicon` ;
+    #   `Vocabulary::INVOICE` pour les documents de la Facturation), les
+    #   variables de boucle et `loop` ;
+    # * mentions obligatoires selon le type de document (`Requirements`),
+    #   pour les seuls documents de la Facturation.
     module Analyzer
       extend Marten::Template::Tag::CanSplitSmartly
 
@@ -59,7 +62,7 @@ module Modeles
       # n'est pas une liste du vocabulaire).
       record Scope, variable : String, list : String?
 
-      def self.analyze(source : String, kind : String? = nil) : Report
+      def self.analyze(source : String, kind : String? = nil, lexicon : Lexicon = Vocabulary::INVOICE) : Report
         report = Report.new
         tokens = begin
           Marten::Template::Parser::Lexer.new(source).tokenize
@@ -76,13 +79,13 @@ module Modeles
             name = token.content.split.first?
             verbatim = true if name == "verbatim"
             verbatim = false if name == "endverbatim"
-            tag(token.content, scopes, report)
-          when .variable? then expression(token.content, scopes, report, printed: true)
+            tag(token.content, scopes, report, lexicon)
+          when .variable? then expression(token.content, scopes, report, lexicon, printed: true)
           when .text?     then unclosed(token.content, report) unless verbatim
           end
         end
         structure(source, report)
-        Requirements.check(kind, report) if kind && report.ok?
+        Requirements.check(kind, report) if kind && Config::KINDS.includes?(kind) && report.ok?
         report
       end
 
@@ -103,7 +106,7 @@ module Modeles
         report.error("syntax", {"message" => error.message.to_s})
       end
 
-      private def self.tag(content : String, scopes : Array(Scope), report : Report) : Nil
+      private def self.tag(content : String, scopes : Array(Scope), report : Report, lexicon : Lexicon) : Nil
         parts = split_smartly(content)
         name = parts.first? || ""
         unless ALLOWED_TAGS.includes?(name)
@@ -116,29 +119,30 @@ module Modeles
             report.error("for_syntax", {"tag" => "{% #{content} %}"})
             scopes << Scope.new("", nil)
           else
-            list = expression(parts[3], scopes, report, printed: false, iterable: true)
+            list = expression(parts[3], scopes, report, lexicon, printed: false, iterable: true)
             report.loops << list if list
             scopes << Scope.new(parts[1], list)
           end
         when "if", "unless", "elsif"
-          condition(parts[1..], scopes, report, content)
+          condition(parts[1..], scopes, report, content, lexicon)
         when "endfor"
           scopes.pop?
         end
       end
 
-      private def self.condition(parts : Array(String), scopes : Array(Scope), report : Report, content : String) : Nil
+      private def self.condition(parts : Array(String), scopes : Array(Scope), report : Report, content : String,
+                                 lexicon : Lexicon) : Nil
         report.error("condition_empty", {"tag" => "{% #{content} %}"}) if parts.empty?
         parts.each do |part|
           next if OPERATORS.includes?(part)
-          expression(part.lstrip('!'), scopes, report, printed: false)
+          expression(part.lstrip('!'), scopes, report, lexicon, printed: false)
         end
       end
 
       # Contrôle d'une expression `chemin|filtre:argument` ; rend le chemin
       # normalisé d'une liste du vocabulaire (`iterable`), sinon `nil`.
-      private def self.expression(raw : String, scopes : Array(Scope), report : Report, printed : Bool,
-                                  iterable : Bool = false) : String?
+      private def self.expression(raw : String, scopes : Array(Scope), report : Report, lexicon : Lexicon,
+                                  printed : Bool, iterable : Bool = false) : String?
         parts = split_filters(raw.strip)
         head = parts.first.strip
         filters = parts[1..]
@@ -148,10 +152,10 @@ module Modeles
             report.error("filter_forbidden", {"filter" => name.strip, "expression" => raw.strip})
           end
           argument = argument.strip
-          path(argument, scopes, report, printed: false, filtered: true) unless argument.empty? || argument.matches?(LITERAL)
+          path(argument, scopes, report, lexicon, printed: false, filtered: true) unless argument.empty? || argument.matches?(LITERAL)
         end
         return if head.empty? || head.matches?(LITERAL)
-        path(head, scopes, report, printed: printed, filtered: !filters.empty?, iterable: iterable)
+        path(head, scopes, report, lexicon, printed: printed, filtered: !filters.empty?, iterable: iterable)
       end
 
       # Découpe `a|b:"x|y"|c` sur les barres hors guillemets.
@@ -180,7 +184,7 @@ module Modeles
       # Contrôle d'un chemin (`facture.numero`, `ligne.designation`,
       # `loop.index`) ; rend la liste du vocabulaire désignée, s'il y en a une.
       # ameba:disable Metrics/CyclomaticComplexity
-      private def self.path(raw : String, scopes : Array(Scope), report : Report, printed : Bool,
+      private def self.path(raw : String, scopes : Array(Scope), report : Report, lexicon : Lexicon, printed : Bool,
                             filtered : Bool = false, iterable : Bool = false) : String?
         segments = raw.split('.')
         head = segments.first
@@ -196,38 +200,37 @@ module Modeles
         if scope = scopes.reverse.find { |item| item.variable == head }
           list = scope.list
           return if list.nil?
-          fields = Vocabulary::LISTS[list]
           if rest.empty?
             report.error("incomplete_field", {"field" => raw}) if printed && !filtered
             return
           end
-          return unknown.call unless rest.size == 1 && fields.includes?(rest.first)
+          return unknown.call unless rest.size == 1 && lexicon.field?(list, rest.first)
           record(report, "#{list}.#{rest.first}", printed)
           return
         end
 
-        if fields = Vocabulary::OBJECTS[head]?
+        if lexicon.object?(head)
           if rest.empty?
             report.error("incomplete_field", {"field" => raw}) if printed && !filtered
             report.error("not_a_list", {"field" => raw}) if iterable
             return
           end
-          return unknown.call unless rest.size == 1 && fields.includes?(rest.first)
+          return unknown.call unless rest.size == 1 && lexicon.field?(head, rest.first)
           report.error("not_a_list", {"field" => raw}) if iterable
           record(report, "#{head}.#{rest.first}", printed)
           return
         end
 
-        if fields = Vocabulary::LISTS[head]?
+        if lexicon.list?(head)
           if rest.empty?
-            if printed && !filtered && !Vocabulary::PRINTABLE_LISTS.includes?(head)
+            if printed && !filtered && !lexicon.printable_lists.includes?(head)
               report.error("incomplete_field", {"field" => raw})
             end
             record(report, head, printed)
             return head
           end
           # Élément par son rang : `lignes.0.designation`.
-          if rest.size == 2 && rest.first.matches?(/\A\d+\z/) && fields.includes?(rest.last)
+          if rest.size == 2 && rest.first.matches?(/\A\d+\z/) && lexicon.field?(head, rest.last)
             record(report, "#{head}.#{rest.last}", printed)
             return
           end

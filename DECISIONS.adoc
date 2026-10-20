@@ -1,0 +1,148 @@
+= partiduo-modeles — décisions
+:toc: left
+:toc-title: Table des matières
+:icons: font
+
+Décisions propres à l'extension `MODELES`, quand un point n'est pas tranché
+par les ADR (contexte, choix, alternative écartée), puis amendements au
+contrat réalisés ici. Les ADR ne sont jamais modifiés.
+
+Spécification : ADR-010 (modèles de documents multiformats), ADR-003
+(contrat d'extension ; section « Amendements adoptés le 13 octobre 2026 »,
+A-REP-1), ADR-005 (interface).
+
+*Décisions antérieures.* Celles de la réalisation (29 septembre 2026) sont
+consignées dans link:doc/ETAT.adoc[] : D-MOD-001 (moteur de Marten bridé) à
+D-MOD-017 (`partiduo-modeles-pdf`), et les blocages B-MOD-001 à B-MOD-007.
+Les décisions communes du cœur qui touchent l'extension (points d'accroche
+D-HOOK-…, amendements D-AMD-…) sont dans le `DECISIONS.adoc` de
+`partiduo-app`. La numérotation continue ici à partir de D-MOD-018.
+
+== Décisions
+
+=== D-MOD-018 — Plus de dépendance déclarée à la Facturation (20 octobre 2026)
+
+*Contexte.* Le manifeste déclarait `depends_on "INVOICING"` (ADR-010 D1) :
+l'extension ne rendait que des documents de la Facturation. L'amendement
+A-REP-1 demande de rendre un modèle avec des données libres fournies par une
+autre extension (rapports, listings), utile aussi à un dossier sans
+Facturation (foyer, association qui ne facture pas).
+
+*Choix.* La dépendance est retirée du manifeste. Rien d'autre ne liait
+l'extension à la Facturation :
+
+* *activation* : l'ensemble actif d'un dossier (`modules_activation` ou
+  `PARTIDUO_MODULES`) n'est pas touché ; un dossier où les deux pièces sont
+  actives le reste. Désactiver la Facturation n'est plus refusé à cause de
+  MODELES (`.required_by`) ;
+* *migrations* : `modeles` 0001 ne dépend que du socle (`core` 0002) et ne
+  pose aucune clé étrangère vers une table de la Facturation
+  (`document_id` est l'identifiant lu par le contrat) ;
+* *données* : modèles, versions et rendus des factures, devis et avoirs
+  restent tels quels ;
+* *comportement* : sans la Facturation, `render`, `templates_for` et l'écran
+  des documents lèvent `ModuleDisabled` (le contrat de la Facturation
+  refuse), le dépôt d'un modèle de facture, de devis ou d'avoir est refusé
+  (`modeles.errors.kind.invalid`), l'écran ne propose ni ces types ni leurs
+  modèles de départ ni leur vocabulaire. Les modèles déjà déposés restent
+  listés et téléchargeables ; ils resservent dès que la Facturation est
+  réactivée.
+
+*Alternative écartée.* `depends_on_any "INVOICING", "REPORTS"` : la liste
+devrait suivre chaque extension qui déclare une sorte ; une sorte déclarée
+par une pièce inactive est de toute façon refusée au dépôt et au rendu
+(D-MOD-019).
+
+=== D-MOD-019 — Sortes de modèles déclarées par une extension (20 octobre 2026)
+
+*Contexte.* Le type d'un modèle (`invoice`, `quote`, `credit_note`) était une
+liste fermée, contrôlée en base, et le vocabulaire de fusion celui d'un
+document de la Facturation.
+
+*Choix.* Une extension *déclare* ses sortes au chargement, avec leur
+vocabulaire : `Modeles::Api.register_vocabulary(kind, VocabularyInput)`
+(registre en mémoire, comme `Partiduo::Api::Liberal.register_asset_source`).
+Une sorte porte :
+
+* la pièce qui la déclare (`module_code`) : elle doit être active pour
+  déposer ou rendre un modèle de cette sorte ;
+* son libellé et le préfixe des libellés de son vocabulaire, fournis par
+  l'extension (`<labels>.groups.<groupe>`, `<labels>.<groupe>.<champ>`) ;
+* des *objets* (`{{ declaration.titre }}`), une *liste* de lignes répétées
+  (`{% for ligne in lignes %}`) et des groupes *ouverts* dont les champs ne
+  sont pas connus d'avance (codes des lignes d'un rapport :
+  `{{ montants.CA }}`) ; un champ ouvert est un identifiant
+  (`[A-Za-z][A-Za-z0-9_]{0,39}`) ;
+* des données d'exemple pour l'aperçu.
+
+Le moteur est inchangé : l'analyse (`Fusion::Analyzer`) et le rendu
+(`Fusion::Engine`, archives ODT et DOCX) reçoivent le vocabulaire de la sorte
+(`Fusion::Lexicon`) au lieu de lire celui de la Facturation ; les mêmes
+balises et filtres sont admis, le même échappement par format s'applique.
+Les mentions obligatoires (D-MOD-012) ne valent que pour les documents de la
+Facturation. Une déclaration incohérente (sorte réservée, nom invalide, sorte
+déjà déclarée par une autre pièce) lève `ArgumentError` au démarrage.
+
+*Données.* Migration `modeles` 0002 : la contrainte `modeles_template.kind`
+passe de la liste fermée à la forme du nom (`^[a-z][a-z0-9_]{1,15}$`) ; les
+modèles existants la satisfont, aucune valeur ne change. Le contrat contrôle
+qu'une sorte est déclarée. Retour arrière : l'ancienne contrainte, possible
+tant qu'aucun modèle d'une sorte déclarée n'existe.
+
+*Alternative écartée.* Déplacer le moteur de fusion dans le socle (autre
+branche de la proposition A-REP-1) : il dépend de `asciicrystal`,
+`kramdown-asciidoc` et du traitement des archives ODT et DOCX, que le cœur
+n'a pas à porter ; une extension qui veut des modèles dépend de celle-ci.
+
+=== D-MOD-020 — Rendu de données libres : `render_data` (20 octobre 2026)
+
+*Choix.* `Modeles::Api.render_data(actor, template_id, kind, values, rows,
+pdf, locale, name) : Result(RenderView)` :
+
+* `values` : `groupe.champ` → texte déjà présenté par l'appelante (montants,
+  dates dans la langue voulue) ; `rows` : lignes répétées (champ → texte) ;
+  chaque clé doit appartenir au vocabulaire de la sorte (erreur par champ
+  `values` ou `rows`, `modeles.errors.data.unknown_field`), 5 000 valeurs,
+  10 000 lignes et 20 000 caractères par valeur au plus ;
+* `template_id` `nil` : le modèle par défaut de la sorte dans la langue
+  `locale` (la langue courante par défaut) ; le modèle doit être actif et de
+  la sorte demandée ;
+* valeurs échappées selon le format comme celles d'une facture, valeur vide
+  = `nil` (D-MOD-002, D-MOD-003) ;
+* *rien n'est conservé* : `rendition` est `nil`. L'appelante garde ce
+  qu'elle veut garder (ses copies figées) ; la table des rendus reste celle
+  des documents de la Facturation ;
+* PDF : comme pour une facture, un échec de la conversion n'empêche pas le
+  fichier au format du modèle ; `pdf_error` donne la clé
+  (`modeles.errors.pdf.unavailable` quand le serveur n'a pas le
+  convertisseur, `.timeout`, `.failed`) et `pdf_detail` le message de
+  l'outil. L'appelante décide de l'afficher.
+
+*Droits.* L'appelante contrôle d'abord *son* droit (par exemple
+`reports.read` pour calculer un rapport) ; MODELES contrôle celui de lire le
+modèle, `modeles.read`, et que la pièce déclarante est active
+(`ModuleDisabled`). Aucun autre droit n'est requis : les données viennent de
+l'appelante, qui les a lues avec l'acteur.
+
+*Alternative écartée.* Conserver chaque rendu de données libres avec son
+empreinte : une déclaration conservée l'est déjà par l'extension appelante,
+et un rendu recalculable n'a pas de valeur probante.
+
+=== D-MOD-021 — Aperçu et écran des sortes déclarées (20 octobre 2026)
+
+*Choix.* L'aperçu d'un modèle d'une sorte déclarée le remplit avec les
+données d'exemple de la déclaration, marqué « Exemple — sans valeur ». Le
+dépôt propose les sortes utilisables du dossier (`Modeles::Api.kinds` :
+types de la Facturation si elle est active, puis sortes des pièces
+actives) ; le vocabulaire affiché comprend celui de chaque sorte déclarée,
+avec une ligne `groupe.CODE` pour un groupe ouvert. Les modèles de départ
+restent ceux de la Facturation (affichés seulement quand elle est active) :
+une extension fournit les siens si elle le souhaite.
+
+== Amendements réalisés
+
+A-REP-1 — Rendu de modèle à partir de données libres (proposé par `partiduo-reports`, adopté le 13 octobre 2026)::
+  *Réalisé le 20 octobre 2026* : `register_vocabulary`, `kinds`,
+  `render_data`, `vocabulary(actor, kind)`, dépendance d'`INVOICING`
+  retirée (D-MOD-018 à D-MOD-021). Contrat : `doc/api/modeles.adoc`.
+  Premier utilisateur : `partiduo-reports` (sortes `report` et `listing`).

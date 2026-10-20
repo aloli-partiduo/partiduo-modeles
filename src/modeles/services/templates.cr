@@ -25,8 +25,25 @@ module Modeles
       TemplateVersion.filter(template_id: template_id).order("-number").first.try(&.number!.to_i) || 0
     end
 
+    # Sorte connue de cette instance : type de document de la Facturation,
+    # ou sorte déclarée par une extension (A-REP-1).
+    def self.known_kind?(kind : String) : Bool
+      Config::KINDS.includes?(kind) || !DataKinds.find(kind).nil?
+    end
+
+    # Sorte qu'on peut déposer maintenant : type de document de la
+    # Facturation active, ou sorte déclarée par une pièce active.
+    def self.usable_kind?(kind : String) : Bool
+      if Config::KINDS.includes?(kind)
+        Partiduo::Modules.active?(Api::INVOICING)
+      else
+        DataKinds.find(kind).try { |definition| Partiduo::Modules.active?(definition.module_code) } || false
+      end
+    end
+
     # Contrôle d'un fichier déposé : format (extension), taille, analyse
-    # (syntaxe, champs, mentions obligatoires du type `kind`).
+    # (syntaxe, champs du vocabulaire de la sorte `kind`, mentions
+    # obligatoires d'un type de document de la Facturation).
     def self.check(filename : String, content : Bytes, kind : String?, expected_format : String? = nil) : Api::CheckView
       format = Config.format_of(filename)
       errors = [] of Api::IssueView
@@ -41,7 +58,8 @@ module Modeles
       elsif content.size > Config::MAX_BYTES
         errors << issue("too_large", {"max" => (Config::MAX_BYTES // (1024 * 1024)).to_s})
       else
-        report = Fusion.analyze(format, content, kind.presence.try { |value| Config::KINDS.includes?(value) ? value : nil })
+        report = Fusion.analyze(format, content, kind.presence.try { |value| Config::KINDS.includes?(value) ? value : nil },
+          DataKinds.lexicon(kind))
         report.errors.each { |item| errors << issue(item.code, item.params) }
         report.warnings.each { |item| warnings << issue(item.code, item.params) }
         fields = (report.printed.to_a + report.referenced.to_a).uniq!.sort!
@@ -63,7 +81,7 @@ module Modeles
       elsif name.size > MAX_NAME
         errors << FieldError.new("name", "modeles.errors.name.too_long", {"max" => MAX_NAME.to_s})
       end
-      unless Config::KINDS.includes?(input.kind)
+      unless usable_kind?(input.kind)
         errors << FieldError.new("kind", "modeles.errors.kind.invalid", {"value" => input.kind})
       end
       unless Config::LOCALES.includes?(input.locale)

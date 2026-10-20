@@ -35,12 +35,14 @@ module Modeles
 
       # Document fusionné ; `marker` : paragraphe « Brouillon — sans valeur »
       # en tête du corps. Lève `Fusion::RenderError` si une partie produite
-      # n'est plus un XML bien formé.
-      def render(values : Hash(String, Marten::Template::Value), marker : String? = nil) : Bytes
+      # n'est plus un XML bien formé. `lexicon` : vocabulaire de la sorte du
+      # modèle.
+      def render(values : Hash(String, Marten::Template::Value), marker : String? = nil,
+                 lexicon : Fusion::Lexicon = Fusion::Vocabulary::INVOICE) : Bytes
         package = Package.new(@package.entries.dup)
         body = @flavor.parts(@package).first?
         @parts.each do |name, xml|
-          rendered = @flavor.finish(Fusion::Engine.render(xml, values, escape: true))
+          rendered = @flavor.finish(Fusion::Engine.render(xml, values, escape: true, lexicon: lexicon))
           rendered = @flavor.mark(rendered, marker) if marker && name == body
           Document.well_formed!(rendered, name)
           package[name] = rendered

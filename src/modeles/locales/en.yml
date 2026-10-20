@@ -94,6 +94,7 @@ en:
         too_long: "The name exceeds %{max} characters."
       kind:
         invalid: "Unknown document type: %{value}."
+        unregistered: "Template kind unknown to this server: %{kind}."
       locale:
         invalid: "Unknown language: %{value}."
       template:
@@ -103,6 +104,11 @@ en:
         kind_mismatch: "This template is meant for another document type."
       document:
         kind: "This document (%{kind}) cannot be rendered with a template: quotes, invoices and credit notes only."
+      data:
+        unknown_field: "Data outside the vocabulary of this kind: %{field}."
+        too_many: "Too much data (%{max} at most)."
+        too_long: "Value too long: %{field} (%{max} characters at most)."
+        no_list: "Kind %{kind} has no repeated rows."
       render:
         failed: "Rendering failed: %{detail}"
       pdf:

@@ -94,6 +94,7 @@ fr:
         too_long: "Le nom dépasse %{max} caractères."
       kind:
         invalid: "Type de document inconnu : %{value}."
+        unregistered: "Sorte de modèle inconnue de ce serveur : %{kind}."
       locale:
         invalid: "Langue inconnue : %{value}."
       template:
@@ -103,6 +104,11 @@ fr:
         kind_mismatch: "Ce modèle est prévu pour un autre type de document."
       document:
         kind: "Ce document (%{kind}) ne se rend pas avec un modèle : devis, factures et avoirs seulement."
+      data:
+        unknown_field: "Donnée hors du vocabulaire de la sorte : %{field}."
+        too_many: "Trop de données (%{max} au plus)."
+        too_long: "Valeur trop longue : %{field} (%{max} caractères au plus)."
+        no_list: "La sorte %{kind} n'a pas de lignes répétées."
       render:
         failed: "Le rendu a échoué : %{detail}"
       pdf:

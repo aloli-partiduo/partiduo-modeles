@@ -1,0 +1,184 @@
+= Contrat de l'extension MODELES (`Modeles::Api`)
+:toc: left
+:toc-title: Table des matières
+:toclevels: 2
+:icons: font
+:source-language: crystal
+
+Contrat public de `partiduo-modeles` (ADR-010 ; A-REP-1), sur le modèle de
+`Partiduo::Api` : acteur en premier argument, contrôle d'accès en première
+ligne (extension active, permission), vues immuables, refus en `Result` avec
+erreurs par champ. Code : `src/modeles/api/`. Décisions : `DECISIONS.adoc`
+(D-MOD-018 et suivantes) et `doc/ETAT.adoc` (D-MOD-001 à D-MOD-017).
+
+== Permissions
+
+[cols="1,3",options="header"]
+|===
+|Permission |Rôle
+
+|`modeles.read`
+|Lister les modèles, les prévisualiser, rendre un document ou des données,
+télécharger les rendus et les modèles de départ.
+
+|`modeles.admin`
+|Déposer, activer, désigner par défaut, retirer un modèle.
+|===
+
+Rendre un document de la Facturation exige aussi `invoicing.invoice.read` et
+la Facturation active. Rendre des données libres exige la pièce qui a
+déclaré la sorte active ; l'appelante contrôle son propre droit avant
+l'appel.
+
+== Modèles
+
+[cols="3,1,4",options="header"]
+|===
+|Appel |Droit |Rôle
+
+|`templates(actor, TemplateQuery)`, `template(actor, id)`
+|read
+|Modèles (`kind`, `locale`, `include_retired`, `active_only`), avec leurs
+versions.
+
+|`default_template(actor, kind, locale)`
+|read
+|Modèle par défaut d'une sorte et d'une langue, ou `nil`.
+
+|`check(actor, UploadInput) : CheckView`
+|admin
+|Contrôle sans enregistrer : format, taille, syntaxe, champs du vocabulaire
+de la sorte, mentions obligatoires d'un document de la Facturation.
+
+|`upload(actor, UploadInput) : Result(TemplateView)`
+|admin
+|Nouveau modèle (version 1) ou nouvelle version. La sorte doit être
+utilisable dans le dossier (`kinds`), sinon `modeles.errors.kind.invalid`.
+
+|`activate`, `set_default`, `unset_default`, `retire`
+|admin
+|Version en service, défaut par sorte et langue, retrait.
+
+|`version_file(actor, id, number) : FileView`
+|read
+|Fichier d'une version, tel que déposé.
+
+|`preview(actor, id, version, pdf) : Result(RenderView)`
+|read
+|Aperçu marqué « Exemple — sans valeur » : document fictif pour la
+Facturation, données d'exemple de la déclaration pour une sorte déclarée.
+|===
+
+== Documents de la Facturation
+
+[cols="3,1,4",options="header"]
+|===
+|Appel |Droit |Rôle
+
+|`templates_for(actor, document_id)`
+|read
+|Modèles actifs du type du document, le défaut de sa langue d'abord.
+
+|`render(actor, document_id, template_id = nil, pdf = true) : Result(RenderView)`
+|read
+|Document émis : rendu conservé (fichier, PDF, empreintes, version du
+modèle) ; brouillon : aperçu non conservé. La facture n'est jamais modifiée.
+
+|`renditions(actor, document_id, limit)`, `rendition(actor, id)`, `rendition_file(actor, id, variant)`
+|read
+|Rendus conservés et leurs fichiers (`file` ou `pdf`).
+|===
+
+== Données libres (A-REP-1)
+
+Une extension déclare au chargement ses sortes de modèles et leur
+vocabulaire, puis fait rendre un modèle de ces sortes avec ses propres
+données.
+
+[source]
+----
+Modeles::Api.register_vocabulary("report", Modeles::Api::VocabularyInput.new(
+  module_code: "REPORTS", label_key: "reports.modeles.kinds.report", labels: "reports.modeles.vocabulary",
+  objects: {"declaration" => %w[titre periode], "montants" => [] of String},
+  open: %w[montants], list: "lignes", item: "ligne", list_fields: %w[code libelle],
+  sample_values: {"declaration.titre" => "Exemple"}))
+
+result = Modeles::Api.render_data(actor, nil, "report",
+  {"declaration.titre" => "SIG 2026", "montants.CA" => "1 234,50"},
+  [{"code" => "CA", "libelle" => "Chiffre d'affaires"}], pdf: true)
+----
+
+[cols="3,1,4",options="header"]
+|===
+|Appel |Droit |Rôle
+
+|`register_vocabulary(kind, VocabularyInput) : Nil`
+|—
+|Déclare une sorte (au démarrage). `kind` : `[a-z][a-z0-9_]{1,15}`, hors
+`invoice`, `quote`, `credit_note`. `ArgumentError` si la déclaration est
+incohérente ou si une autre pièce a déjà déclaré la sorte.
+
+|`kinds(actor) : Array(KindView)`
+|read
+|Sortes utilisables : types de la Facturation si elle est active, puis
+sortes déclarées par une pièce active (`code`, `label_key`, `module_code`,
+`invoicing`).
+
+|`kind_label_key(kind) : String`
+|—
+|Clé du libellé d'une sorte (le code s'il est inconnu).
+
+|`vocabulary(actor, kind = nil) : Array(VocabularyGroupView)`
+|read
+|Groupes du vocabulaire : celui de la Facturation (`kind` nul ou type de
+document), ou celui d'une sorte déclarée (`open`, `labels`).
+
+|`render_data(actor, template_id, kind, values, rows = [], pdf = false, locale = nil, name = "") : Result(RenderView)`
+|read
+|Fusion avec la version active du modèle (`template_id` nul : défaut de la
+sorte dans `locale`, langue courante par défaut). Rien n'est conservé
+(`rendition` nul). Nom de fichier : `<name ou sorte>-<modèle>-v<n>.<ext>`.
+|===
+
+`VocabularyInput` : `module_code`, `label_key`, `objects` (groupe → champs),
+`list`, `item`, `list_fields` (lignes répétées ; `list` vide : aucune),
+`open` (groupes aux champs libres, identifiants de 40 caractères au plus),
+`labels` (préfixe des libellés : `<labels>.groups.<groupe>`,
+`<labels>.<groupe>.<champ>`, `<labels>.<groupe>._any`), `sample_values`,
+`sample_rows`.
+
+Données : `values` (`groupe.champ` → texte présenté) et `rows` (champ →
+texte), échappées selon le format du modèle ; une valeur vide vaut `nil`.
+Limites : 5 000 valeurs, 10 000 lignes, 20 000 caractères par valeur.
+
+Refus de `render_data` : `kind` (`modeles.errors.kind.unregistered`),
+`template_id` (`modeles.errors.template.none`, `.not_active`,
+`.kind_mismatch`), `values` et `rows` (`modeles.errors.data.unknown_field`
+`%{field}`, `.too_many` `%{max}`, `.too_long` `%{field}` `%{max}`,
+`.no_list` `%{kind}`), `base` (`modeles.errors.render.failed`).
+`Forbidden` sans `modeles.read`, `ModuleDisabled` si MODELES ou la pièce
+déclarante est inactive.
+
+`RenderView` : `file`, `pdf` (nul si non demandé ou si la conversion a
+échoué), `pdf_error` (`modeles.errors.pdf.unavailable` sans convertisseur
+pour le format, `.timeout`, `.failed`), `pdf_detail`, `rendition`, `draft`
+(aperçu ou brouillon).
+
+== Convertisseurs et modèles de départ
+
+[cols="3,1,4",options="header"]
+|===
+|Appel |Droit |Rôle
+
+|`converters(actor)`, `pdf_available?(actor, format)`
+|read
+|Convertisseurs PDF déclarés par l'instance.
+
+|`starters(actor)`, `starter_file(actor, kind, locale, format)`
+|read
+|Modèles de départ des documents de la Facturation.
+
+|`message(issue) : String`
+|—
+|Message traduit d'une remarque de contrôle.
+|===
