@@ -10,7 +10,7 @@ shards:
 
   asciicrystal-pdf:
     git: https://github.com/aloli-crystal/asciicrystal-pdf.git
-    version: 2.3.24.112
+    version: 2.3.24.114
 
   authn:
     git: https://github.com/aloli-crystal/authn.git
@@ -26,7 +26,7 @@ shards:
 
   country-flags:
     git: https://github.com/aloli-crystal/country-flags.git
-    version: 0.1.5
+    version: 0.1.6
 
   db:
     git: https://github.com/crystal-lang/crystal-db.git
@@ -42,7 +42,7 @@ shards:
 
   emojis:
     git: https://github.com/aloli-crystal/emojis.git
-    version: 0.2.5
+    version: 0.2.6
 
   i18n:
     git: https://github.com/crystal-i18n/i18n.git
@@ -58,7 +58,7 @@ shards:
 
   kramdown-asciidoc:
     git: https://github.com/aloli-crystal/kramdown-asciidoc.git
-    version: 2.1.1.5
+    version: 2.1.1.6
 
   marten:
     git: https://github.com/aloli-crystal/marten.git
@@ -78,7 +78,7 @@ shards:
 
   noto-cjk:
     git: https://github.com/aloli-crystal/noto-cjk.git
-    version: 0.1.5
+    version: 0.1.6
 
   openssl_ext:
     git: https://github.com/spider-gazelle/openssl_ext.git
@@ -86,11 +86,11 @@ shards:
 
   partiduo:
     git: https://github.com/aloli-partiduo/partiduo-app.git
-    version: 0.1.30+git.commit.b42da7ef2aa9c4874ebfdbb548b99bc8b43a49e9
+    version: 0.1.37+git.commit.10d5914e2988cb8eb07f71f608fb72e6ec2952d1
 
   partiduo-ui-bulma:
     git: https://github.com/aloli-partiduo/partiduo-ui-bulma.git
-    version: 0.1.12+git.commit.0f975430cbdef1ea5d487f7c3f333485d0c5fcd0
+    version: 0.1.18+git.commit.a640c2c1f3849f8bd959b2f3c9e21e6e514876cc
 
   password-policy:
     git: https://github.com/aloli-crystal/password-policy.git
@@ -98,7 +98,7 @@ shards:
 
   pdf:
     git: https://github.com/aloli-crystal/pdf.git
-    version: 1.22.1
+    version: 1.22.2
 
   pdf-a:
     git: https://github.com/aloli-crystal/pdf-a.git
@@ -114,7 +114,7 @@ shards:
 
   rouge:
     git: https://github.com/aloli-crystal/rouge.git
-    version: 4.7.0.3
+    version: 4.7.0.4
 
   saml:
     git: https://github.com/aloli-crystal/saml.git
