@@ -2,9 +2,9 @@
 
 module Modeles
   # Modèles de départ (ADR-010 D6) : facture, devis et avoir, en AsciiDoc,
-  # Markdown, ODT et DOCX, en français, en anglais et en néerlandais,
-  # complets et conformes (ils passent le contrôle du dépôt). Ils sont
-  # produits par le code, libellés tirés des traductions
+  # Markdown, ODT et DOCX, dans chaque langue d'un document
+  # (`Config::LOCALES`), complets et conformes (ils passent le contrôle du
+  # dépôt). Ils sont produits par le code, libellés tirés des traductions
   # (`modeles.starters.*`) : l'utilisateur les télécharge, les adapte dans
   # son logiciel et les redépose. `scripts/starters.cr` les écrit dans
   # `starters/` pour les lire sans lancer Partiduo (archives ODT et DOCX

@@ -3,12 +3,15 @@
 require "../spec_helper"
 
 describe "Modèles de départ (ADR-010 D6)" do
-  it "fournit facture, devis et avoir dans les quatre formats et les trois langues" do
+  it "fournit facture, devis et avoir dans les quatre formats et chaque langue de Partiduo" do
     list = Modeles::Starters.list
-    list.size.should eq(3 * 4 * 3)
+    Modeles::Config::LOCALES.should eq(Partiduo::LOCALES)
+    list.size.should eq(3 * 4 * Partiduo::LOCALES.size)
     list.map(&.filename).should contain("modele-facture-fr.odt")
     list.map(&.filename).should contain("modele-avoir-nl.docx")
     list.map(&.filename).should contain("modele-devis-en.md")
+    list.map(&.filename).should contain("modele-facture-de.docx")
+    list.map(&.filename).should contain("modele-avoir-pt.odt")
   end
 
   it "passe le contrôle du dépôt pour son type et se rend avec le document fictif" do
@@ -43,6 +46,11 @@ describe "Modèles de départ (ADR-010 D6)" do
     text.should contain("1.759,15 EUR")
     quote = Modeles::Sample.document("quote", "en", Time.utc(2026, 9, 15))
     String.new(Modeles::Fusion.render("asciidoc", Modeles::Starters.file("quote", "en", "asciidoc"), quote)).should contain("|Valid until |2026-10-15")
+    german = Modeles::Sample.document("invoice", "de", Time.utc(2026, 9, 15))
+    text = String.new(Modeles::Fusion.render("markdown", Modeles::Starters.file("invoice", "de", "markdown"), german))
+    text.should contain("1.759,15 EUR")
+    text.should contain("15.09.2026")
+    text.should_not contain("missing translation")
   end
 
   it "est à jour dans starters/ (script scripts/starters.cr)" do

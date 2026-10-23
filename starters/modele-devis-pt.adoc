@@ -1,0 +1,54 @@
+= {{ facture.type }} {{ facture.numero }}
+:nofooter:
+:lang: pt
+
+[cols="1,1",frame=none,grid=none]
+|===
+a|*{{ vendeur.nom }}* +
+{{ vendeur.adresse }}{% if vendeur.courriel %} +
+{{ vendeur.courriel }}{% endif %}
+a|*Cliente* +
+{{ client.nom }} +
+{{ client.adresse }}
+|===
+
+[cols="1,2",frame=none,grid=none,width=70%]
+|===
+|Data |{{ facture.date }}
+{% if facture.validite %}|Válido até |{{ facture.validite }}
+{% endif %}{% if facture.reference_acheteur %}|A vossa referência |{{ facture.reference_acheteur }}
+{% endif %}{% if facture.reference_commande %}|A vossa encomenda |{{ facture.reference_commande }}
+{% endif %}|===
+
+[cols="6,1,1,2,1,2",options="header"]
+|===
+|Designação >|Qtd. |Unidade >|PU s/ IVA >|IVA >|Total s/ IVA
+{% for ligne in lignes %}{% if ligne.chiffree %}|{{ ligne.designation }}{% if ligne.remise %} (desconto {{ ligne.remise }}){% endif %} >|{{ ligne.quantite }} |{{ ligne.unite }} >|{{ ligne.prix_unitaire }} >|{{ ligne.taux_tva }} >|{{ ligne.montant_ht }}
+{% elsif ligne.sous_total %}5+|_{{ ligne.designation|default:"Subtotal" }}_ >|_{{ ligne.montant_ht }}_
+{% elsif ligne.note %}6+|_{{ ligne.designation }}_
+{% else %}6+|*{{ ligne.designation }}*
+{% endif %}{% endfor %}|===
+
+[cols="1,2,2",options="header",width=60%]
+|===
+>|Taxa de IVA >|Base s/ IVA >|Montante de IVA
+{% for groupe in tva %}>|{{ groupe.taux }} >|{{ groupe.base }} >|{{ groupe.montant }}
+{% endfor %}|===
+
+[cols="2,1",frame=none,grid=rows,width=50%]
+|===
+|Total s/ IVA >|{{ totaux.ht }} {{ facture.devise }}
+|Total IVA >|{{ totaux.tva }} {{ facture.devise }}
+|*Total c/ IVA* >|*{{ totaux.ttc }} {{ facture.devise }}*
+{% if totaux.acompte %}|Adiantamentos deduzidos >|{{ totaux.acompte }} {{ facture.devise }}
+|*Total a pagar* >|*{{ totaux.net_a_payer }} {{ facture.devise }}*
+{% endif %}|===
+
+{% if facture.conditions_paiement %}*Condições de pagamento:* {{ facture.conditions_paiement }}
+
+{% endif %}{% if facture.origine %}{{ facture.origine }}
+
+{% endif %}{% if facture.notes %}{{ facture.notes }}
+
+{% endif %}.Menções legais
+{{ mentions }}

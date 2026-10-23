@@ -63,6 +63,11 @@ describe "Écrans de l'extension sous /ext/MODELES/ (ADR-010, ADR-005 D4)" do
     response.content_type.should start_with(Modeles::Config::CONTENT_TYPES["docx"])
     response.headers["Content-Disposition"].should eq(%(attachment; filename="modele-devis-nl.docx"))
     response.content.to_slice.should eq(Modeles::Starters.file("quote", "nl", "docx"))
+    german = browser.get("/ext/MODELES/starters/invoice/de/odt")
+    german.status.should eq(200)
+    german.headers["Content-Disposition"].should eq(%(attachment; filename="modele-facture-de.odt"))
+    german.content.to_slice.should eq(Modeles::Starters.file("invoice", "de", "odt"))
+    browser.get("/ext/MODELES/starters/invoice/pl/odt").status.should eq(404)
     browser.get("/ext/MODELES/starters/order/fr/odt").status.should eq(404)
   end
 
@@ -221,7 +226,7 @@ describe "Écrans de l'extension sous /ext/MODELES/ (ADR-010, ADR-005 D4)" do
     browser.get("/ext/MODELES/").status.should eq(403)
   end
 
-  it "affiche les écrans en anglais et en néerlandais" do
+  it "affiche les écrans en anglais, en néerlandais et en allemand" do
     S.books
     S.template
     en = PartiduoUi::Browser.new("en")
@@ -232,5 +237,12 @@ describe "Écrans de l'extension sous /ext/MODELES/ (ADR-010, ADR-005 D4)" do
     nl.jar[Marten.settings.i18n.locale_cookie_name] = "nl"
     nl.post("/login", {"email" => "alice@example.com", "password" => PartiduoUi::Accounts::PASSWORD})
     nl.get("/ext/MODELES/").html.should contain("Startsjablonen")
+    de = PartiduoUi::Browser.new("de")
+    de.jar[Marten.settings.i18n.locale_cookie_name] = "de"
+    de.post("/login", {"email" => "alice@example.com", "password" => PartiduoUi::Accounts::PASSWORD})
+    html = de.get("/ext/MODELES/").html
+    html.should contain("Startvorlagen")
+    html.should contain("Deutsch")
+    html.should contain("/ext/MODELES/starters/invoice/de/odt")
   end
 end

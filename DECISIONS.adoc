@@ -139,6 +139,26 @@ avec une ligne `groupe.CODE` pour un groupe ouvert. Les modèles de départ
 restent ceux de la Facturation (affichés seulement quand elle est active) :
 une extension fournit les siens si elle le souhaite.
 
+=== D-MOD-022 — Documents et modèles dans les sept langues de l'interface (23 octobre 2026)
+
+*Contexte.* La Facturation accepte désormais un document dans toute langue
+d'interface de Partiduo (`Partiduo::LOCALES` : fr, en, nl, de, es, it,
+pt) ; l'extension n'en connaissait que trois.
+
+*Choix.* `Config::LOCALES` vaut `Partiduo::LOCALES` : modèles déposés,
+rendus et modèles de départ (facture, devis, avoir × quatre formats) existent
+dans les sept langues ; la migration 0003 élargit les contraintes de langue
+de `modeles_template` et `modeles_rendition` (liste figée dans la
+migration). `Fusion::Formatter` prend séparateurs et motif de date de
+`Partiduo::LocaleFormats`, comme le PDF légal de la Facturation :
+`1.234,56` et `15.09.2026` (de), `1.234,56` et `15/09/2026` (es, it),
+`1 234,56` et `15/09/2026` (pt, espace ordinaire comme en français). Le taux
+suit le glossaire de l'interface : `20 %` (fr, de, es), `20%` (en, nl, it,
+pt).
+
+*Alternative écartée.* Recopier la liste des langues et les séparateurs dans
+l'extension : ils divergeraient du PDF légal à la prochaine langue.
+
 == Amendements réalisés
 
 A-REP-1 — Rendu de modèle à partir de données libres (proposé par `partiduo-reports`, adopté le 13 octobre 2026)::

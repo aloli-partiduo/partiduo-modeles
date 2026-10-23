@@ -58,7 +58,7 @@ describe "Dépôt, contrôle et versions des modèles (ADR-010 D3)" do
     upload("{% include 'x' %}".to_slice).errors.map(&.key).should contain("modeles.check.tag_forbidden")
     upload("x".to_slice, filename: "modele.txt").errors.map(&.key).should eq(["modeles.check.format_unknown"])
     upload(Bytes.empty).errors.map(&.key).should eq(["modeles.check.empty"])
-    upload("x".to_slice, name: "", kind: "order", locale: "de").errors.map(&.field).should eq(%w[name kind locale])
+    upload("x".to_slice, name: "", kind: "order", locale: "pl").errors.map(&.field).should eq(%w[name kind locale])
   end
 
   it "rend un rapport de contrôle sans rien enregistrer, remarque sur le PDF comprise" do

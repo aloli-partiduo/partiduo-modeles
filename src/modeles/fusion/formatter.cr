@@ -4,9 +4,14 @@ module Modeles
   module Fusion
     # Présentation des montants, quantités, taux et dates dans la langue du
     # document (ADR-010 D2), avec les conventions du PDF légal de la
-    # Facturation : `1 234,56` (fr), `1,234.56` (en), `1.234,56` (nl) ;
-    # dates `15/09/2026` (fr), `2026-09-15` (en), `15-09-2026` (nl).
+    # Facturation (`Partiduo::LocaleFormats`, D-MOD-022) : `1 234,56` (fr,
+    # pt), `1,234.56` (en), `1.234,56` (nl, de, es, it) ; dates
+    # `15/09/2026` (fr, es, it, pt), `2026-09-15` (en), `15-09-2026` (nl),
+    # `15.09.2026` (de). Une langue inconnue suit le français.
     struct Formatter
+      # Langues qui séparent le taux du signe `%` par une espace.
+      SPACED_PERCENT = %w[fr de es]
+
       getter locale : String
 
       def initialize(@locale : String)
@@ -24,33 +29,26 @@ module Modeles
       # Quantité sans zéros inutiles (`10`, `2,5`).
       def quantity(value : BigDecimal) : String
         text = Formatter.plain(value)
-        locale == "en" ? text : text.tr(".", ",")
+        text.tr(".", decimal)
       end
 
-      # Taux en pour cent : `20 %` (fr), `20%` (en, nl).
+      # Taux en pour cent : `20 %` (fr, de, es), `20%` (en, nl, it, pt).
       def percent(value : BigDecimal) : String
-        locale == "fr" ? "#{quantity(value)} %" : "#{quantity(value)}%"
+        spaced = SPACED_PERCENT.includes?(locale) || !Partiduo::LocaleFormats::CONVENTIONS.has_key?(locale)
+        spaced ? "#{quantity(value)} %" : "#{quantity(value)}%"
       end
 
       def date(value : Time?) : String
         return "" unless value
-        case locale
-        when "en" then value.to_s("%Y-%m-%d")
-        when "nl" then value.to_s("%d-%m-%Y")
-        else           value.to_s("%d/%m/%Y")
-        end
+        Partiduo::LocaleFormats.date(value, locale)
       end
 
       private def thousands : String
-        case locale
-        when "en" then ","
-        when "nl" then "."
-        else           " "
-        end
+        Partiduo::LocaleFormats.for(locale).thousands
       end
 
       private def decimal : String
-        locale == "en" ? "." : ","
+        Partiduo::LocaleFormats.for(locale).decimal
       end
 
       # Partie entière et partie décimale sur `places` chiffres, arrondi

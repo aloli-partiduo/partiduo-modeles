@@ -21,6 +21,10 @@ fr:
       fr: "Français"
       en: "Anglais"
       nl: "Néerlandais"
+      de: "Allemand"
+      es: "Espagnol"
+      it: "Italien"
+      pt: "Portugais"
     fusion:
       draft: "Brouillon — sans valeur"
       sample: "Exemple — sans valeur"
@@ -166,7 +170,7 @@ fr:
         origine: "Document d'origine (« issu du devis … »)"
         facture_origine: "Numéro de la facture corrigée par un avoir"
         facture_origine_date: "Date de la facture corrigée"
-        langue: "Langue du document (fr, en, nl)"
+        langue: "Langue du document (fr, en, nl, de, es, it, pt)"
         brouillon: "Vrai pour un brouillon ou un aperçu"
         empreinte: "Empreinte SHA-256 enregistrée à l'émission"
       vendeur:

@@ -1,0 +1,180 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
+# Libellés du vocabulaire des sortes propres aux specs
+# (`SpecSupport::DATA_KINDS`), dans chaque langue de Partiduo, comme les
+# fournirait l'extension qui déclare une sorte. Chargés par les specs seules.
+fr:
+  modeles_specs:
+    vocabulary:
+      groups:
+        entete: "En-tête"
+        montants: "Montants"
+        lignes: "Lignes"
+        fiche: "Fiche"
+        compte: "Compte"
+      entete:
+        titre: "Titre"
+        periode: "Période"
+        note: "Note"
+      montants:
+        _any: "Montant d'un code"
+      lignes:
+        _any: "Valeur d'une colonne"
+        code: "Code"
+        libelle: "Libellé"
+        montant: "Montant"
+      fiche:
+        nom: "Nom"
+        ville: "Ville"
+      compte:
+        numero: "Numéro"
+en:
+  modeles_specs:
+    vocabulary:
+      groups:
+        entete: "Header"
+        montants: "Amounts"
+        lignes: "Lines"
+        fiche: "Record"
+        compte: "Account"
+      entete:
+        titre: "Title"
+        periode: "Period"
+        note: "Note"
+      montants:
+        _any: "Amount of a code"
+      lignes:
+        _any: "Value of a column"
+        code: "Code"
+        libelle: "Label"
+        montant: "Amount"
+      fiche:
+        nom: "Name"
+        ville: "City"
+      compte:
+        numero: "Number"
+nl:
+  modeles_specs:
+    vocabulary:
+      groups:
+        entete: "Koptekst"
+        montants: "Bedragen"
+        lignes: "Regels"
+        fiche: "Fiche"
+        compte: "Rekening"
+      entete:
+        titre: "Titel"
+        periode: "Periode"
+        note: "Opmerking"
+      montants:
+        _any: "Bedrag van een code"
+      lignes:
+        _any: "Waarde van een kolom"
+        code: "Code"
+        libelle: "Omschrijving"
+        montant: "Bedrag"
+      fiche:
+        nom: "Naam"
+        ville: "Plaats"
+      compte:
+        numero: "Nummer"
+de:
+  modeles_specs:
+    vocabulary:
+      groups:
+        entete: "Kopfzeile"
+        montants: "Beträge"
+        lignes: "Zeilen"
+        fiche: "Stammsatz"
+        compte: "Konto"
+      entete:
+        titre: "Titel"
+        periode: "Zeitraum"
+        note: "Hinweis"
+      montants:
+        _any: "Betrag eines Codes"
+      lignes:
+        _any: "Wert einer Spalte"
+        code: "Code"
+        libelle: "Bezeichnung"
+        montant: "Betrag"
+      fiche:
+        nom: "Name"
+        ville: "Ort"
+      compte:
+        numero: "Nummer"
+es:
+  modeles_specs:
+    vocabulary:
+      groups:
+        entete: "Encabezado"
+        montants: "Importes"
+        lignes: "Líneas"
+        fiche: "Ficha"
+        compte: "Cuenta"
+      entete:
+        titre: "Título"
+        periode: "Período"
+        note: "Nota"
+      montants:
+        _any: "Importe de un código"
+      lignes:
+        _any: "Valor de una columna"
+        code: "Código"
+        libelle: "Descripción"
+        montant: "Importe"
+      fiche:
+        nom: "Nombre"
+        ville: "Ciudad"
+      compte:
+        numero: "Número"
+it:
+  modeles_specs:
+    vocabulary:
+      groups:
+        entete: "Intestazione"
+        montants: "Importi"
+        lignes: "Righe"
+        fiche: "Scheda"
+        compte: "Conto"
+      entete:
+        titre: "Titolo"
+        periode: "Periodo"
+        note: "Nota"
+      montants:
+        _any: "Importo di un codice"
+      lignes:
+        _any: "Valore di una colonna"
+        code: "Codice"
+        libelle: "Descrizione"
+        montant: "Importo"
+      fiche:
+        nom: "Nome"
+        ville: "Città"
+      compte:
+        numero: "Numero"
+pt:
+  modeles_specs:
+    vocabulary:
+      groups:
+        entete: "Cabeçalho"
+        montants: "Montantes"
+        lignes: "Linhas"
+        fiche: "Ficha"
+        compte: "Conta"
+      entete:
+        titre: "Título"
+        periode: "Período"
+        note: "Nota"
+      montants:
+        _any: "Montante de um código"
+      lignes:
+        _any: "Valor de uma coluna"
+        code: "Código"
+        libelle: "Descrição"
+        montant: "Montante"
+      fiche:
+        nom: "Nome"
+        ville: "Localidade"
+      compte:
+        numero: "Número"

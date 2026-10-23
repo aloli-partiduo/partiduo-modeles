@@ -4,10 +4,10 @@ require "../spec_helper"
 
 # Traductions des écrans de l'extension (ADR-005 D7) : chaque route de
 # `/ext/MODELES/` servie en `GET` (liste tirée du routeur de Marten),
-# obtenue en fr, en et nl par un administrateur, avec des convertisseurs
-# de substitution : modèle Markdown par défaut, modèle DOCX en service
-# avec une deuxième version à activer, modèle retiré, facture émise rendue,
-# devis émis, facture brouillon. Les sortes de modèles propres aux specs
+# obtenue dans chaque langue de Partiduo par un administrateur, avec des
+# convertisseurs de substitution : modèle Markdown par défaut, modèle DOCX
+# en service avec une deuxième version à activer, modèle retiré, facture
+# émise rendue, devis émis, facture brouillon. Les sortes de modèles propres aux specs
 # (`SpecSupport::DATA_KINDS`, libellés non traduits) sont retirées le temps
 # de l'exploration : les écrans sont ceux de la production.
 # Contrôle de l'interface (`PartiduoUi::Translations`) : ni marqueur de
@@ -17,7 +17,7 @@ require "../spec_helper"
 private alias S = Modeles::SpecSupport
 private alias Api = Modeles::Api
 
-describe "Traductions des écrans MODELES (fr, en, nl)" do
+describe "Traductions des écrans MODELES (toutes les langues de Partiduo)" do
   it "rend chaque écran dans chaque langue, sans clé absente, brute ni interpolation non résolue" do
     S.books
     browser = PartiduoUi::Accounts.signed_in
@@ -34,7 +34,7 @@ describe "Traductions des écrans MODELES (fr, en, nl)" do
     S.draft
 
     explorer = PartiduoUi::Translations::Explorer.new(&.name.starts_with?("modeles:"))
-    # Les requêtes laissent active la dernière langue obtenue (nl) : la
+    # Les requêtes laissent active la dernière langue obtenue : la
     # langue d'avant est rendue aux exemples suivants.
     locale = I18n.locale
     begin

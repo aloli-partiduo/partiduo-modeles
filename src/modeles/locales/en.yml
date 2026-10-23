@@ -21,6 +21,10 @@ en:
       fr: "French"
       en: "English"
       nl: "Dutch"
+      de: "German"
+      es: "Spanish"
+      it: "Italian"
+      pt: "Portuguese"
     fusion:
       draft: "Draft — no value"
       sample: "Sample — no value"
@@ -166,7 +170,7 @@ en:
         origine: "Source document (“from quote …”)"
         facture_origine: "Number of the invoice credited"
         facture_origine_date: "Date of the invoice credited"
-        langue: "Document language (fr, en, nl)"
+        langue: "Document language (fr, en, nl, de, es, it, pt)"
         brouillon: "True for a draft or a preview"
         empreinte: "SHA-256 fingerprint recorded at issue"
       vendeur:

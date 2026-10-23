@@ -70,7 +70,7 @@ module Modeles
           "reference_commande"   => s(view.order_reference),
           "reference_paiement"   => s(view.structured_reference.presence || view.number || ""),
           "conditions_paiement"  => s(terms),
-          "categorie_operation"  => s(I18n.t("modeles.fusion.categories.#{view.operation_category}")),
+          "categorie_operation"  => s(category),
           "remise_globale"       => s(global_discount),
           "notes"                => s(view.notes),
           "origine"              => s(view.origin_mention.try { |mention| mention_text(mention) } || ""),
@@ -184,6 +184,12 @@ module Modeles
         when "markdown" then "\\\n"
         else                 Escaper::NEWLINE.to_s
         end
+      end
+
+      # Catégorie de l'opération (`goods`, `services`, `mixed`) ; vide pour
+      # un document qui n'en porte pas (rendu de données libres).
+      private def category : String
+        @view.operation_category.presence.try { |code| I18n.t("modeles.fusion.categories.#{code}") } || ""
       end
 
       # Conditions de paiement : à réception, ou à N jours avec l'échéance ;

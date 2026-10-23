@@ -32,13 +32,13 @@ describe "Conventions de l'extension MODELES" do
     source_files("**/*").select { |path| File.basename(path).downcase.includes?(name) }.should be_empty
   end
 
-  it "a les mêmes clés de traduction en fr, en et nl, aux mêmes interpolations" do
+  it "a les mêmes clés de traduction dans toutes les langues, aux mêmes interpolations" do
     %w[src/modeles/locales ui/bulma/locales].flat_map do |dir|
       PartiduoUi::Translations.parity_failures(File.join(Modeles::SpecSupport::ROOT, dir))
     end.should eq([] of String)
   end
 
-  it "traduit en fr, en et nl toute clé passée à I18n.t ou {% translate %} (cœur, interface, extension)" do
+  it "traduit dans toutes les langues toute clé passée à I18n.t ou {% translate %} (cœur, interface, extension)" do
     PartiduoUi::Translations.unknown_keys(Modeles::SpecSupport::ROOT, %w[src/**/*.cr ui/**/*.cr ui/**/*.html]).should eq([] of String)
   end
 

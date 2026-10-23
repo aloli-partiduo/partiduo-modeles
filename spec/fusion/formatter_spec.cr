@@ -10,6 +10,10 @@ describe Modeles::Fusion::Formatter do
     Formatter.new("fr").amount(value).should eq("-1 234 567,90")
     Formatter.new("en").amount(value).should eq("-1,234,567.90")
     Formatter.new("nl").amount(value).should eq("-1.234.567,90")
+    Formatter.new("de").amount(value).should eq("-1.234.567,90")
+    Formatter.new("es").amount(value).should eq("-1.234.567,90")
+    Formatter.new("it").amount(value).should eq("-1.234.567,90")
+    Formatter.new("pt").amount(value).should eq("-1 234 567,90")
     Formatter.new("fr").amount(BigDecimal.new("0.5")).should eq("0,50")
     Formatter.new("en").amount(BigDecimal.new("12")).should eq("12.00")
   end
@@ -20,6 +24,12 @@ describe Modeles::Fusion::Formatter do
     Formatter.new("fr").percent(BigDecimal.new("5.5")).should eq("5,5 %")
     Formatter.new("en").percent(BigDecimal.new("20")).should eq("20%")
     Formatter.new("nl").percent(BigDecimal.new("21")).should eq("21%")
+    Formatter.new("de").quantity(BigDecimal.new("2.50")).should eq("2,5")
+    Formatter.new("de").percent(BigDecimal.new("19")).should eq("19 %")
+    Formatter.new("es").percent(BigDecimal.new("21")).should eq("21 %")
+    Formatter.new("it").percent(BigDecimal.new("22")).should eq("22%")
+    Formatter.new("pt").percent(BigDecimal.new("23")).should eq("23%")
+    Formatter.new("pl").percent(BigDecimal.new("5.5")).should eq("5,5 %")
   end
 
   it "présente les dates comme le PDF légal de la Facturation" do
@@ -27,6 +37,8 @@ describe Modeles::Fusion::Formatter do
     Formatter.new("fr").date(day).should eq("05/09/2026")
     Formatter.new("en").date(day).should eq("2026-09-05")
     Formatter.new("nl").date(day).should eq("05-09-2026")
+    Formatter.new("de").date(day).should eq("05.09.2026")
+    %w[es it pt].each { |locale| Formatter.new(locale).date(day).should eq("05/09/2026") }
     Formatter.new("fr").date(nil).should eq("")
   end
 end

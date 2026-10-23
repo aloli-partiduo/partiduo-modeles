@@ -8,8 +8,9 @@ module Modeles
     # rend avec les modèles de facture.
     KINDS = %w[invoice quote credit_note]
 
-    # Langues d'un document de la Facturation.
-    LOCALES = %w[fr en nl]
+    # Langues d'un document de la Facturation : celles de l'interface de
+    # Partiduo (D-MOD-022).
+    LOCALES = Partiduo::LOCALES
 
     # Formats d'un modèle (ADR-010 D2), dans l'ordre de l'écran.
     FORMATS = %w[asciidoc markdown odt docx]

@@ -57,6 +57,9 @@ describe "Moteur de fusion (ADR-010 D2)" do
     nl = render("{{ totaux.ttc }} {{ facture.date }} {{ facture.type }}", "markdown", sample("invoice", "nl"))
     nl.should eq("1.759,15 15-09-2026 Factuur")
     render("{{ totaux.ttc }} {{ facture.date }}", "markdown", sample("invoice", "en")).should eq("1,759.15 2026-09-15")
+    de = render("{{ totaux.ttc }} {{ facture.date }} {{ facture.langue }}", "markdown", sample("invoice", "de"))
+    de.should eq("1.759,15 15.09.2026 de")
+    render("{{ mentions }}", "markdown", sample("invoice", "de")).should_not contain("missing translation")
   end
 
   it "rend une valeur vide fausse dans une condition et remplacée par default" do

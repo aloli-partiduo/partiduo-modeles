@@ -1,11 +1,11 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
 # Écrit les modèles de départ (ADR-010 D6) dans `starters/` : facture, devis
-# et avoir, en AsciiDoc, Markdown, ODT et DOCX, en français, en anglais et
-# en néerlandais. Ils sont produits par `Modeles::Starters` (le même code
-# que le téléchargement depuis l'écran) ; les archives ODT et DOCX sont
-# identiques d'une génération à l'autre, et une spec vérifie que le
-# dossier est à jour.
+# et avoir, en AsciiDoc, Markdown, ODT et DOCX, dans chaque langue d'un
+# document (fr, en, nl, de, es, it, pt). Ils sont produits par
+# `Modeles::Starters` (le même code que le téléchargement depuis l'écran) ;
+# les archives ODT et DOCX sont identiques d'une génération à l'autre, et
+# une spec vérifie que le dossier est à jour.
 #
 # `crystal run scripts/starters.cr`
 ENV["MARTEN_ENV"] ||= "test"

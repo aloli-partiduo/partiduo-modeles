@@ -21,6 +21,10 @@ nl:
       fr: "Frans"
       en: "Engels"
       nl: "Nederlands"
+      de: "Duits"
+      es: "Spaans"
+      it: "Italiaans"
+      pt: "Portugees"
     fusion:
       draft: "Concept — zonder waarde"
       sample: "Voorbeeld — zonder waarde"
@@ -166,7 +170,7 @@ nl:
         origine: "Oorsprongsdocument („uit offerte …”)"
         facture_origine: "Nummer van de gecrediteerde factuur"
         facture_origine_date: "Datum van de gecrediteerde factuur"
-        langue: "Taal van het document (fr, en, nl)"
+        langue: "Taal van het document (fr, en, nl, de, es, it, pt)"
         brouillon: "Waar voor een concept of voorbeeld"
         empreinte: "SHA-256-vingerafdruk bij uitgifte"
       vendeur:
