@@ -16,11 +16,15 @@
 # * Aucun abonnement : un rendu est demandé par l'utilisateur, jamais
 #   déclenché par l'émission (le PDF légal Factur-X reste la référence,
 #   ADR-010 D4).
+# * Exclusion (D-MOD-023, D-AMD-042 du cœur) : jamais dans le dossier d'un
+#   foyer (`incompatible_with_kind "household"`), même sans PERSO : les
+#   modèles de factures, devis et avoirs sont des documents d'entreprise.
 Partiduo::Modules.register do
   code "MODELES"
   name "modeles.module.name"
   version Modeles::VERSION
   requires_core "~> 0.1"
+  incompatible_with_kind "household"
 
   permission "modeles.read"
   permission "modeles.admin"

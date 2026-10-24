@@ -159,6 +159,16 @@ pt).
 *Alternative écartée.* Recopier la liste des langues et les séparateurs dans
 l'extension : ils divergeraient du PDF légal à la prochaine langue.
 
+=== D-MOD-023 — Exclue d'un dossier foyer (24 octobre 2026)
+
+*Choix.* `incompatible_with_kind "household"` au manifeste (exclusion
+adoptée par l'utilisateur le 24 octobre 2026, D-AMD-042 du cœur) : les
+modèles de factures, devis et avoirs sont des documents d'entreprise ;
+jusqu'ici, seul `PERSO` les écartait d'un foyer. Le cœur refuse
+l'activation, le provisionnement et le démarrage d'un foyer où
+l'extension est active. Les specs provisionnent un dossier d'entreprise :
+inchangées.
+
 == Amendements réalisés
 
 A-REP-1 — Rendu de modèle à partir de données libres (proposé par `partiduo-reports`, adopté le 13 octobre 2026)::

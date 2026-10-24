@@ -10,6 +10,8 @@ describe "Droits (ADR-010 D7)" do
     manifest = Partiduo::Modules[Modeles::CODE]
     manifest.permissions.should eq(%w[modeles.read modeles.admin])
     manifest.depends_on.should be_empty
+    # Exclue d'un dossier foyer (D-MOD-023).
+    manifest.incompatible_with_kind.should eq(["household"])
   end
 
   it "reste active sans la Facturation, dont les documents sont alors refusés" do
