@@ -12,7 +12,7 @@ pt:
       preview: "Pré-visualização"
       preview_pdf: "Pré-visualização PDF"
       activate: "Ativar"
-      set_default: "Modelo predefinido"
+      set_default: "Definir como predefinido"
       unset_default: "Deixar de usar como predefinido"
       retire: "Retirar"
     fields:
@@ -35,8 +35,8 @@ pt:
       title: "Carregar um modelo"
       file: "Ficheiro do modelo"
       help: "AsciiDoc (.adoc), Markdown (.md), OpenDocument (.odt) ou Word (.docx), no máximo %{max} MB. Os campos escrevem-se {{ facture.numero }}; consulte o vocabulário abaixo."
-      check_note: "O modelo é controlado no carregamento: sintaxe, campos conhecidos e menções obrigatórias. Só entra em serviço depois de ativado."
-      submit: "Carregar e controlar"
+      check_note: "O modelo é verificado no carregamento: sintaxe, campos conhecidos e menções obrigatórias. Só entra em serviço depois de ativado."
+      submit: "Carregar e verificar"
       refused: "Modelo recusado: corrija estes pontos e carregue-o de novo."
     errors:
       file_missing: "Escolha o ficheiro do modelo."
@@ -57,7 +57,7 @@ pt:
       in_use: "Versão em serviço"
       in_use_tag: "em serviço"
       pdf: "PDF"
-      pdf_yes: "Gerado em cada geração"
+      pdf_yes: "Produzido em cada geração"
       pdf_no: "Nenhum conversor declarado neste servidor (%{variable})"
       pending_help: "Uma versão carregada ainda não está em serviço: verifique a sua pré-visualização e depois ative-a."
       versions: "Versões"
@@ -69,7 +69,7 @@ pt:
       new_version: "Carregar uma nova versão"
       new_version_help: "Mesmo formato do modelo, no máximo %{max} MB. Os documentos já gerados mantêm a sua versão."
     flash:
-      uploaded: "Modelo controlado e carregado (versão %{version}). Verifique a pré-visualização e depois ative-o."
+      uploaded: "Modelo verificado e carregado (versão %{version}). Verifique a pré-visualização e depois ative-o."
       activated: "Versão colocada em serviço."
       default_set: "Modelo definido como predefinido para o seu tipo e idioma."
       default_unset: "O modelo deixou de ser usado como predefinido."

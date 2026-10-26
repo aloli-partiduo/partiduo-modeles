@@ -109,7 +109,7 @@ de:
       document:
         kind: "Dieses Dokument (%{kind}) wird nicht mit einer Vorlage erzeugt: nur Angebote, Rechnungen und Gutschriften."
       data:
-        unknown_field: "Datum außerhalb des Vokabulars der Art: %{field}."
+        unknown_field: "Angabe außerhalb des Vokabulars der Art: %{field}."
         too_many: "Zu viele Daten (höchstens %{max})."
         too_long: "Wert zu lang: %{field} (höchstens %{max} Zeichen)."
         no_list: "Die Art %{kind} hat keine wiederholten Zeilen."

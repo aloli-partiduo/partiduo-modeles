@@ -12,7 +12,7 @@ de:
       preview: "Vorschau"
       preview_pdf: "PDF-Vorschau"
       activate: "Aktivieren"
-      set_default: "Standardvorlage"
+      set_default: "Als Standard festlegen"
       unset_default: "Nicht mehr als Standard verwenden"
       retire: "Zurückziehen"
     fields:
